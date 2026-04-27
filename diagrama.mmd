@@ -1,0 +1,259 @@
+---
+id: 4a7575db-03c9-4080-aa6d-d63b986e89c1
+---
+erDiagram
+
+    %% ─── TRANSVERSAL ───────────────────────────────────────────
+    users {
+        bigint id PK
+        string name
+        string email
+        string password
+        bigint current_team_id FK
+    }
+
+    roles {
+        bigint id PK
+        string name "admin | secretaria | docente"
+    }
+
+    model_has_roles {
+        bigint role_id FK
+        string model_type
+        bigint model_id FK
+    }
+
+    users ||--o{ model_has_roles : "tiene"
+    roles ||--o{ model_has_roles : "asignado a"
+
+    %% ─── INSTITUCIÓN ────────────────────────────────────────────
+    institutions {
+        bigint id PK
+        string name
+        string type "escuela | colegio"
+        string ruc
+        string address
+        string phone
+        string email
+        string director_name
+        string logo
+    }
+
+    %% ─── ACADÉMICO ──────────────────────────────────────────────
+    academic_years {
+        bigint id PK
+        bigint institution_id FK
+        int year
+        date start_date
+        date end_date
+        boolean is_active
+    }
+
+    periods {
+        bigint id PK
+        bigint academic_year_id FK
+        int number "1, 2, 3"
+        string name "I Trimestre..."
+        date start_date
+        date end_date
+    }
+
+    education_levels {
+        bigint id PK
+        bigint institution_id FK
+        string name "Pre-Escolar | Básica General | Pre-Media | Media"
+        string institution_type "escuela | colegio"
+        int grade_from "1, 7, 10"
+        int grade_to "6, 9, 12"
+        int order
+    }
+
+    grades {
+        bigint id PK
+        bigint education_level_id FK
+        int number "1-12"
+        string name "Pre-Kinder | Kinder | 1° | 2°..."
+        int order
+        int min_age "4, 5, 6..."
+    }
+
+    classrooms {
+        bigint id PK
+        bigint grade_id FK
+        bigint academic_year_id FK
+        string section "A, B, C, D..."
+        string shift "matutino | vespertino"
+        int capacity
+    }
+
+    subjects {
+        bigint id PK
+        bigint institution_id FK
+        string name "Español, Matemática..."
+        string code
+    }
+
+    grade_subjects {
+        bigint id PK
+        bigint grade_id FK
+        bigint subject_id FK
+    }
+
+    subject_assignments {
+        bigint id PK
+        bigint teacher_id FK
+        bigint subject_id FK
+        bigint classroom_id FK
+        bigint academic_year_id FK
+    }
+
+    habits {
+        bigint id PK
+        bigint institution_id FK
+        string name "Responsabilidad, Orden..."
+        int order
+    }
+
+    institutions ||--o{ academic_years : "tiene"
+    institutions ||--o{ education_levels : "tiene"
+    institutions ||--o{ subjects : "tiene"
+    institutions ||--o{ habits : "configura"
+    academic_years ||--o{ periods : "tiene"
+    academic_years ||--o{ classrooms : "abre"
+    education_levels ||--o{ grades : "contiene"
+    grades ||--o{ classrooms : "tiene"
+    grades ||--o{ grade_subjects : "incluye"
+    subjects ||--o{ grade_subjects : "asignada a"
+    subjects ||--o{ subject_assignments : "dictada en"
+    classrooms ||--o{ subject_assignments : "recibe"
+
+    %% ─── PERSONAS ───────────────────────────────────────────────
+    students {
+        bigint id PK
+        string cedula
+        string first_name
+        string last_name
+        date birth_date
+        string sex "M | F"
+        string birth_place
+        string blood_type
+        text medical_conditions
+        string previous_school
+        string photo
+        string address
+    }
+
+    guardians {
+        bigint id PK
+        bigint user_id FK "null — para portal futuro"
+        string cedula
+        string first_name
+        string last_name
+        string relationship "padre | madre | tutor..."
+        string primary_phone
+        string emergency_phone
+        string email
+        string occupation
+    }
+
+    student_guardians {
+        bigint id PK
+        bigint student_id FK
+        bigint guardian_id FK
+        boolean is_primary
+    }
+
+    teachers {
+        bigint id PK
+        bigint user_id FK
+        string cedula
+        string first_name
+        string last_name
+        string phone
+        string specialization
+    }
+
+    classroom_advisors {
+        bigint id PK
+        bigint classroom_id FK
+        bigint teacher_id FK
+        bigint academic_year_id FK
+    }
+
+    users ||--o| teachers : "es"
+    users ||--o| guardians : "puede ser"
+    students ||--o{ student_guardians : "tiene"
+    guardians ||--o{ student_guardians : "es acudiente de"
+    teachers ||--o{ subject_assignments : "dicta"
+    teachers ||--o{ classroom_advisors : "es consejero en"
+    classrooms ||--o{ classroom_advisors : "tiene consejero"
+
+    %% ─── MATRÍCULAS ─────────────────────────────────────────────
+    enrollments {
+        bigint id PK
+        bigint student_id FK
+        bigint classroom_id FK
+        bigint academic_year_id FK
+        bigint registered_by FK "user_id"
+        date enrollment_date
+        string status "activo | retirado | trasladado"
+        string receipt_number
+        boolean doc_cedula_student
+        boolean doc_cedula_guardian
+        boolean doc_boletin
+        boolean doc_foto
+        boolean doc_address
+        text notes
+    }
+
+    payments {
+        bigint id PK
+        bigint enrollment_id FK
+        bigint received_by FK "user_id"
+        string receipt_number
+        decimal amount
+        string concept "Donación de grado..."
+        decimal previous_balance
+        decimal payment
+        decimal balance
+        date payment_date
+    }
+
+    students ||--o{ enrollments : "se matricula"
+    classrooms ||--o{ enrollments : "recibe"
+    academic_years ||--o{ enrollments : "contiene"
+    users ||--o{ enrollments : "registra"
+    enrollments ||--o{ payments : "genera"
+    users ||--o{ payments : "recibe"
+
+    %% ─── ACADÉMICO ESCALABLE ────────────────────────────────────
+    grade_scores {
+        bigint id PK
+        bigint enrollment_id FK
+        bigint subject_id FK
+        bigint period_id FK
+        decimal score "1.0 - 5.0"
+    }
+
+    habit_scores {
+        bigint id PK
+        bigint enrollment_id FK
+        bigint habit_id FK
+        bigint period_id FK
+        string score "S | R | X"
+    }
+
+    attendance {
+        bigint id PK
+        bigint enrollment_id FK
+        date date
+        string type "ausencia | tardanza"
+    }
+
+    enrollments ||--o{ grade_scores : "tiene"
+    enrollments ||--o{ habit_scores : "tiene"
+    enrollments ||--o{ attendance : "registra"
+    subjects ||--o{ grade_scores : "calificada en"
+    habits ||--o{ habit_scores : "evaluado en"
+    periods ||--o{ grade_scores : "pertenece a"
+    periods ||--o{ habit_scores : "pertenece a"
