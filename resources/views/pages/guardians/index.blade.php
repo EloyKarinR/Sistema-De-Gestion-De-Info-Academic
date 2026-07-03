@@ -27,6 +27,24 @@ new #[Layout('layouts.app')] #[Title('Acudientes')] class extends Component
 
     public string $portalPassword = '';
 
+    public ?int $editGuardianId = null;
+
+    public string $editFirstName = '';
+
+    public string $editLastName = '';
+
+    public string $editCedula = '';
+
+    public string $editRelationship = 'padre';
+
+    public string $editPrimaryPhone = '';
+
+    public string $editEmergencyPhone = '';
+
+    public string $editEmail = '';
+
+    public string $editOccupation = '';
+
     public function updatedSearch(): void
     {
         $this->resetPage();
@@ -93,6 +111,57 @@ new #[Layout('layouts.app')] #[Title('Acudientes')] class extends Component
 
         unset($this->guardians);
     }
+
+    public function openEditModal(int $guardianId): void
+    {
+        $this->authorize('guardian.edit');
+
+        $guardian = Guardian::findOrFail($guardianId);
+
+        $this->editGuardianId = $guardianId;
+        $this->editFirstName = $guardian->first_name;
+        $this->editLastName = $guardian->last_name;
+        $this->editCedula = $guardian->cedula ?? '';
+        $this->editRelationship = $guardian->relationship;
+        $this->editPrimaryPhone = $guardian->primary_phone;
+        $this->editEmergencyPhone = $guardian->emergency_phone ?? '';
+        $this->editEmail = $guardian->email ?? '';
+        $this->editOccupation = $guardian->occupation ?? '';
+
+        Flux::modal('edit-guardian')->show();
+    }
+
+    public function updateGuardian(): void
+    {
+        $this->authorize('guardian.edit');
+
+        $this->validate([
+            'editFirstName' => 'required|string|max:100',
+            'editLastName' => 'required|string|max:100',
+            'editCedula' => 'nullable|string|max:20|unique:guardians,cedula,'.$this->editGuardianId,
+            'editRelationship' => 'required|in:padre,madre,abuelo,abuela,tio,tia,hermano,hermana,tutor,otro',
+            'editPrimaryPhone' => 'required|string|max:20',
+            'editEmergencyPhone' => 'nullable|string|max:20',
+            'editEmail' => 'nullable|email|max:255',
+            'editOccupation' => 'nullable|string|max:255',
+        ]);
+
+        Guardian::findOrFail($this->editGuardianId)->update([
+            'first_name' => $this->editFirstName,
+            'last_name' => $this->editLastName,
+            'cedula' => $this->editCedula ?: null,
+            'relationship' => $this->editRelationship,
+            'primary_phone' => $this->editPrimaryPhone,
+            'emergency_phone' => $this->editEmergencyPhone ?: null,
+            'email' => $this->editEmail ?: null,
+            'occupation' => $this->editOccupation ?: null,
+        ]);
+
+        Flux::modal('edit-guardian')->close();
+        Flux::toast(variant: 'success', text: 'Datos del acudiente actualizados.');
+
+        unset($this->guardians);
+    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
@@ -146,16 +215,26 @@ new #[Layout('layouts.app')] #[Title('Acudientes')] class extends Component
                         </flux:table.cell>
                         <flux:table.cell>
                             @can('guardian.edit')
-                                @if (! $guardian->user_id)
+                                <div class="flex gap-2">
                                     <flux:button
                                         size="sm"
                                         variant="ghost"
-                                        icon="key"
-                                        wire:click="openPortalModal({{ $guardian->id }})"
+                                        icon="pencil-square"
+                                        wire:click="openEditModal({{ $guardian->id }})"
                                     >
-                                        Dar acceso
+                                        Editar
                                     </flux:button>
-                                @endif
+                                    @if (! $guardian->user_id)
+                                        <flux:button
+                                            size="sm"
+                                            variant="ghost"
+                                            icon="key"
+                                            wire:click="openPortalModal({{ $guardian->id }})"
+                                        >
+                                            Dar acceso
+                                        </flux:button>
+                                    @endif
+                                </div>
                             @endcan
                         </flux:table.cell>
                     </flux:table.row>
@@ -199,6 +278,51 @@ new #[Layout('layouts.app')] #[Title('Acudientes')] class extends Component
             </flux:modal.close>
             <flux:button variant="primary" wire:click="grantPortalAccess" wire:loading.attr="disabled">
                 Crear acceso
+            </flux:button>
+        </div>
+    </flux:modal>
+
+    {{-- Modal: Editar acudiente --}}
+    <flux:modal name="edit-guardian" class="max-w-md">
+        <flux:heading size="lg" class="mb-4">Editar acudiente</flux:heading>
+
+        <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <flux:input wire:model="editFirstName" label="Nombre(s)" required />
+                @error('editFirstName') <flux:error>{{ $message }}</flux:error> @enderror
+
+                <flux:input wire:model="editLastName" label="Apellidos" required />
+                @error('editLastName') <flux:error>{{ $message }}</flux:error> @enderror
+            </div>
+
+            <flux:input wire:model="editCedula" label="Cédula" />
+            @error('editCedula') <flux:error>{{ $message }}</flux:error> @enderror
+
+            <flux:select wire:model="editRelationship" label="Parentesco">
+                @foreach (['padre','madre','abuelo','abuela','tio','tia','hermano','hermana','tutor','otro'] as $rel)
+                    <flux:select.option value="{{ $rel }}">{{ ucfirst($rel) }}</flux:select.option>
+                @endforeach
+            </flux:select>
+
+            <div class="grid grid-cols-2 gap-4">
+                <flux:input wire:model="editPrimaryPhone" label="Teléfono principal" type="tel" required />
+                @error('editPrimaryPhone') <flux:error>{{ $message }}</flux:error> @enderror
+
+                <flux:input wire:model="editEmergencyPhone" label="Teléfono de emergencia" type="tel" />
+            </div>
+
+            <flux:input wire:model="editEmail" label="Correo electrónico" type="email" />
+            @error('editEmail') <flux:error>{{ $message }}</flux:error> @enderror
+
+            <flux:input wire:model="editOccupation" label="Ocupación" />
+        </div>
+
+        <div class="mt-6 flex justify-end gap-2">
+            <flux:modal.close>
+                <flux:button variant="ghost">Cancelar</flux:button>
+            </flux:modal.close>
+            <flux:button variant="primary" wire:click="updateGuardian" wire:loading.attr="disabled">
+                Guardar cambios
             </flux:button>
         </div>
     </flux:modal>
