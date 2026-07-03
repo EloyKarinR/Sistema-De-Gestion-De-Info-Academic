@@ -37,7 +37,7 @@
                 @endcanany
 
                 {{-- Gestión --}}
-                @canany(['student.view', 'guardian.view', 'enrollment.view'])
+                @canany(['student.view', 'guardian.view', 'enrollment.view', 'teacher.view', 'scores.view'])
                     <flux:sidebar.group heading="Gestión" class="grid">
                         @can('student.view')
                             <flux:sidebar.item icon="users" :href="route('students.index')" :current="request()->routeIs('students.*')" wire:navigate>
@@ -45,8 +45,13 @@
                             </flux:sidebar.item>
                         @endcan
                         @can('guardian.view')
-                            <flux:sidebar.item icon="user-group" href="#" wire:navigate>
+                            <flux:sidebar.item icon="user-group" :href="route('guardians.index')" :current="request()->routeIs('guardians.*')" wire:navigate>
                                 Acudientes
+                            </flux:sidebar.item>
+                        @endcan
+                        @can('teacher.view')
+                            <flux:sidebar.item icon="identification" :href="route('teachers.index')" :current="request()->routeIs('teachers.*')" wire:navigate>
+                                Docentes
                             </flux:sidebar.item>
                         @endcan
                         @can('enrollment.view')
@@ -54,8 +59,22 @@
                                 Matrículas
                             </flux:sidebar.item>
                         @endcan
+                        @can('scores.view')
+                            <flux:sidebar.item icon="pencil-square" :href="route('scores.index')" :current="request()->routeIs('scores.*')" wire:navigate>
+                                Notas
+                            </flux:sidebar.item>
+                        @endcan
                     </flux:sidebar.group>
                 @endcanany
+
+                {{-- Portal del acudiente --}}
+                @can('portal.view')
+                    <flux:sidebar.group heading="Portal" class="grid">
+                        <flux:sidebar.item icon="home-modern" :href="route('portal.index')" :current="request()->routeIs('portal.*')" wire:navigate>
+                            Mi Portal
+                        </flux:sidebar.item>
+                    </flux:sidebar.group>
+                @endcan
 
                 {{-- Reportes --}}
                 @can('reports.view')

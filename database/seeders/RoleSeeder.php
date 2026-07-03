@@ -44,6 +44,9 @@ class RoleSeeder extends Seeder
 
             // Usuarios
             'users.manage',
+
+            // Portal del acudiente
+            'portal.view',
         ];
 
         foreach ($permissions as $permission) {
@@ -76,6 +79,12 @@ class RoleSeeder extends Seeder
             'scores.view', 'scores.enter',
             'attendance.view', 'attendance.enter',
             'reports.view',
+        ]);
+
+        // Acudiente — solo ve el portal de su(s) hijo(s)
+        $acudiente = Role::firstOrCreate(['name' => 'acudiente']);
+        $acudiente->givePermissionTo([
+            'portal.view',
         ]);
     }
 }
