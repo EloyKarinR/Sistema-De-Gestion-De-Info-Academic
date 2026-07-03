@@ -13,48 +13,74 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Component {
-
-    public int    $step        = 1;
+new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Component
+{
+    public int $step = 1;
 
     // Paso 1 — Estudiante
     public string $cedulaSearch = '';
-    public string $studentMode  = 'search'; // search | found | create
-    public ?int   $studentId    = null;
 
-    public string $firstName         = '';
-    public string $lastName          = '';
-    public string $birthDate         = '';
-    public string $sex               = 'M';
-    public string $address           = '';
-    public string $birthPlace        = '';
-    public string $bloodType         = '';
+    public string $studentMode = 'search'; // search | found | create
+
+    public ?int $studentId = null;
+
+    public string $firstName = '';
+
+    public string $lastName = '';
+
+    public string $birthDate = '';
+
+    public string $sex = 'M';
+
+    public string $address = '';
+
+    public string $birthPlace = '';
+
+    public string $bloodType = '';
+
     public string $medicalConditions = '';
-    public string $previousSchool    = '';
+
+    public string $previousSchool = '';
 
     // Paso 2 — Acudiente
-    public string $guardianCedula    = '';
-    public string $guardianMode      = 'create'; // create | existing
-    public ?int   $guardianId        = null;
+    public string $guardianCedula = '';
+
+    public string $guardianMode = 'create'; // create | existing
+
+    public ?int $guardianId = null;
 
     public string $guardianFirstName = '';
-    public string $guardianLastName  = '';
-    public string $relationship      = 'padre';
-    public string $primaryPhone      = '';
-    public string $emergencyPhone    = '';
-    public string $guardianEmail     = '';
-    public string $occupation        = '';
+
+    public string $guardianLastName = '';
+
+    public string $relationship = 'padre';
+
+    public string $primaryPhone = '';
+
+    public string $emergencyPhone = '';
+
+    public string $guardianEmail = '';
+
+    public string $occupation = '';
 
     // Paso 3 — Matrícula
-    public string $classroomId    = '';
+    public string $classroomId = '';
+
     public string $enrollmentType = 'nuevo_ingreso';
+
     public string $enrollmentDate = '';
-    public bool   $docCedulaStudent  = false;
-    public bool   $docCedulaGuardian = false;
-    public bool   $docBoletin        = false;
-    public bool   $docFoto           = false;
-    public bool   $docAddress        = false;
-    public string $notes             = '';
+
+    public bool $docCedulaStudent = false;
+
+    public bool $docCedulaGuardian = false;
+
+    public bool $docBoletin = false;
+
+    public bool $docFoto = false;
+
+    public bool $docAddress = false;
+
+    public string $notes = '';
 
     // Recibo
     public ?int $enrollmentId = null;
@@ -96,7 +122,9 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
     #[Computed]
     public function classrooms()
     {
-        if (! $this->activeYear) return collect();
+        if (! $this->activeYear) {
+            return collect();
+        }
 
         return Classroom::where('academic_year_id', $this->activeYear->id)
             ->with('grade.educationLevel')
@@ -121,11 +149,12 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
 
                 if ($alreadyEnrolled) {
                     $this->addError('cedulaSearch', 'Este estudiante ya está matriculado en el año escolar activo.');
+
                     return;
                 }
             }
 
-            $this->studentId   = $student->id;
+            $this->studentId = $student->id;
             $this->studentMode = 'found';
         } else {
             $this->studentMode = 'create';
@@ -138,7 +167,7 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
         $primary = $student->guardians()->wherePivot('is_primary', true)->first();
 
         if ($primary) {
-            $this->guardianId   = $primary->id;
+            $this->guardianId = $primary->id;
             $this->guardianMode = 'existing';
         } else {
             $this->guardianMode = 'create';
@@ -152,36 +181,36 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
     {
         $this->validate([
             'firstName' => 'required|string|max:100',
-            'lastName'  => 'required|string|max:100',
+            'lastName' => 'required|string|max:100',
             'birthDate' => 'required|date',
-            'sex'       => 'required|in:M,F',
-            'address'   => 'required|string|max:255',
+            'sex' => 'required|in:M,F',
+            'address' => 'required|string|max:255',
         ]);
 
         $student = Student::create([
-            'cedula'             => trim($this->cedulaSearch) ?: null,
-            'first_name'         => $this->firstName,
-            'last_name'          => $this->lastName,
-            'birth_date'         => $this->birthDate,
-            'sex'                => $this->sex,
-            'address'            => $this->address,
-            'birth_place'        => $this->birthPlace ?: null,
-            'blood_type'         => $this->bloodType ?: null,
+            'cedula' => trim($this->cedulaSearch) ?: null,
+            'first_name' => $this->firstName,
+            'last_name' => $this->lastName,
+            'birth_date' => $this->birthDate,
+            'sex' => $this->sex,
+            'address' => $this->address,
+            'birth_place' => $this->birthPlace ?: null,
+            'blood_type' => $this->bloodType ?: null,
             'medical_conditions' => $this->medicalConditions ?: null,
-            'previous_school'    => $this->previousSchool ?: null,
+            'previous_school' => $this->previousSchool ?: null,
         ]);
 
-        $this->studentId    = $student->id;
+        $this->studentId = $student->id;
         $this->guardianMode = 'create';
-        $this->step         = 2;
+        $this->step = 2;
         unset($this->foundStudent);
     }
 
     public function backToStep1(): void
     {
         $this->studentMode = 'search';
-        $this->studentId   = null;
-        $this->step        = 1;
+        $this->studentId = null;
+        $this->step = 1;
         unset($this->foundStudent);
     }
 
@@ -194,13 +223,13 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
         $guardian = Guardian::where('cedula', trim($this->guardianCedula))->first();
 
         if ($guardian) {
-            $this->guardianId   = $guardian->id;
+            $this->guardianId = $guardian->id;
             $this->guardianMode = 'existing';
         } else {
             $this->addError('guardianCedula', 'No se encontró ningún acudiente con esa cédula. Completa el formulario para registrarlo.');
             $this->guardianFirstName = '';
-            $this->guardianLastName  = '';
-            $this->guardianMode      = 'create';
+            $this->guardianLastName = '';
+            $this->guardianMode = 'create';
         }
     }
 
@@ -213,25 +242,25 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
     {
         $this->validate([
             'guardianFirstName' => 'required|string|max:100',
-            'guardianLastName'  => 'required|string|max:100',
-            'relationship'      => 'required|in:padre,madre,abuelo,abuela,tio,tia,hermano,hermana,tutor,otro',
-            'primaryPhone'      => 'required|string|max:20',
-            'guardianCedula'    => 'nullable|string|max:20',
+            'guardianLastName' => 'required|string|max:100',
+            'relationship' => 'required|in:padre,madre,abuelo,abuela,tio,tia,hermano,hermana,tutor,otro',
+            'primaryPhone' => 'required|string|max:20',
+            'guardianCedula' => 'nullable|string|max:20',
         ]);
 
         $guardian = Guardian::create([
-            'cedula'          => trim($this->guardianCedula) ?: null,
-            'first_name'      => $this->guardianFirstName,
-            'last_name'       => $this->guardianLastName,
-            'relationship'    => $this->relationship,
-            'primary_phone'   => $this->primaryPhone,
+            'cedula' => trim($this->guardianCedula) ?: null,
+            'first_name' => $this->guardianFirstName,
+            'last_name' => $this->guardianLastName,
+            'relationship' => $this->relationship,
+            'primary_phone' => $this->primaryPhone,
             'emergency_phone' => $this->emergencyPhone ?: null,
-            'email'           => $this->guardianEmail ?: null,
-            'occupation'      => $this->occupation ?: null,
+            'email' => $this->guardianEmail ?: null,
+            'occupation' => $this->occupation ?: null,
         ]);
 
         $this->guardianId = $guardian->id;
-        $this->step       = 3;
+        $this->step = 3;
     }
 
     public function backToStep2(): void
@@ -244,39 +273,47 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
     public function saveEnrollment(): void
     {
         $this->validate([
-            'classroomId'    => 'required|exists:classrooms,id',
+            'classroomId' => 'required|exists:classrooms,id',
             'enrollmentType' => 'required|in:nuevo_ingreso,promovido,rehabilitacion,traslado',
             'enrollmentDate' => 'required|date',
         ]);
 
         if (! $this->activeYear) {
             Flux::toast(variant: 'danger', text: 'No hay año escolar activo.');
+
             return;
         }
 
         $student = Student::find($this->studentId);
+        $classroom = Classroom::with('grade')->find($this->classroomId);
+
+        if (! $classroom->grade->acceptsAge($student->age)) {
+            $this->addError('classroomId', "Esta aula es para edades de {$classroom->grade->min_age} a {$classroom->grade->max_age} años. El estudiante tiene {$student->age}.");
+
+            return;
+        }
 
         if ($this->guardianId && ! $student->guardians()->where('guardian_id', $this->guardianId)->exists()) {
             $student->guardians()->attach($this->guardianId, ['is_primary' => true]);
         }
 
         $enrollment = Enrollment::create([
-            'student_id'          => $this->studentId,
-            'classroom_id'        => $this->classroomId,
-            'academic_year_id'    => $this->activeYear->id,
-            'registered_by'       => Auth::id(),
-            'enrollment_date'     => $this->enrollmentDate,
-            'status'              => 'activo',
-            'enrollment_type'     => $this->enrollmentType,
-            'doc_cedula_student'  => $this->docCedulaStudent,
+            'student_id' => $this->studentId,
+            'classroom_id' => $this->classroomId,
+            'academic_year_id' => $this->activeYear->id,
+            'registered_by' => Auth::id(),
+            'enrollment_date' => $this->enrollmentDate,
+            'status' => 'activo',
+            'enrollment_type' => $this->enrollmentType,
+            'doc_cedula_student' => $this->docCedulaStudent,
             'doc_cedula_guardian' => $this->docCedulaGuardian,
-            'doc_boletin'         => $this->docBoletin,
-            'doc_foto'            => $this->docFoto,
-            'doc_address'         => $this->docAddress,
-            'notes'               => $this->notes ?: null,
+            'doc_boletin' => $this->docBoletin,
+            'doc_foto' => $this->docFoto,
+            'doc_address' => $this->docAddress,
+            'notes' => $this->notes ?: null,
         ]);
 
-        $enrollment->update(['receipt_number' => 'MAT-' . $this->activeYear->year . '-' . str_pad($enrollment->id, 4, '0', STR_PAD_LEFT)]);
+        $enrollment->update(['receipt_number' => 'MAT-'.$this->activeYear->year.'-'.str_pad($enrollment->id, 4, '0', STR_PAD_LEFT)]);
 
         $this->enrollmentId = $enrollment->id;
         $this->step = 4;
@@ -287,11 +324,11 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
     {
         $this->reset();
         $this->enrollmentDate = now()->format('Y-m-d');
-        $this->step           = 1;
-        $this->studentMode    = 'search';
-        $this->guardianMode   = 'create';
-        $this->relationship   = 'padre';
-        $this->sex            = 'M';
+        $this->step = 1;
+        $this->studentMode = 'search';
+        $this->guardianMode = 'create';
+        $this->relationship = 'padre';
+        $this->sex = 'M';
         $this->enrollmentType = 'nuevo_ingreso';
         unset($this->activeYear, $this->classrooms, $this->foundStudent, $this->receipt);
     }
@@ -544,18 +581,29 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <flux:select wire:model="classroomId" label="Aula" placeholder="Selecciona un aula" class="sm:col-span-2">
                         @foreach ($this->classrooms as $classroom)
-                            @php $available = $classroom->available_spots; @endphp
+                            @php
+                                $available = $classroom->available_spots;
+                                $ageOk = $classroom->grade->acceptsAge($this->foundStudent?->age);
+                            @endphp
                             <flux:select.option
                                 value="{{ $classroom->id }}"
-                                :disabled="$available <= 0"
+                                :disabled="$available <= 0 || ! $ageOk"
                             >
                                 {{ $classroom->grade->name }}-{{ $classroom->section }}
                                 ({{ $classroom->grade->educationLevel->name }})
                                 — {{ $available }} disponibles
+                                @if (! $ageOk)
+                                    (requiere {{ $classroom->grade->min_age }}-{{ $classroom->grade->max_age }} años)
+                                @endif
                             </flux:select.option>
                         @endforeach
                     </flux:select>
                     @error('classroomId') <flux:error>{{ $message }}</flux:error> @enderror
+                    @if ($this->foundStudent?->age !== null)
+                        <flux:text class="text-xs text-zinc-500 sm:col-span-2">
+                            Edad actual del estudiante: {{ $this->foundStudent->age }} años.
+                        </flux:text>
+                    @endif
 
                     <flux:select wire:model="enrollmentType" label="Tipo de matrícula">
                         <flux:select.option value="nuevo_ingreso">Nuevo ingreso</flux:select.option>

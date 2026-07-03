@@ -98,4 +98,45 @@ class EnrollmentTest extends TestCase
 
         $this->assertSame(1, Enrollment::where('student_id', $student->id)->count());
     }
+
+    public function test_no_permite_matricular_a_un_estudiante_en_un_aula_fuera_de_su_rango_de_edad(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $secretaria = $this->makeStaffUser('secretaria', $team);
+
+        $institution = $this->makeInstitution();
+        $year = $this->makeActiveYear($institution);
+
+        $grade = $this->makeGrade($institution, 'Pre-Kinder', 0);
+        $grade->update(['min_age' => 4, 'max_age' => 5]);
+        $classroom = $this->makeClassroom($grade, $year);
+
+        // Estudiante de 10 años, muy grande para Pre-Kinder (4-5 años).
+        $student = Student::create([
+            'cedula' => '8-999-1234', 'first_name' => 'Ana', 'last_name' => 'Pérez',
+            'birth_date' => now()->subYears(10)->format('Y-m-d'), 'sex' => 'F', 'address' => 'Calle 2',
+        ]);
+
+        Livewire::actingAs($secretaria)
+            ->test('pages::enrollments.create')
+            ->set('studentId', $student->id)
+            ->set('studentMode', 'found')
+            ->call('confirmFoundStudent')
+            ->set('guardianFirstName', 'Marta')
+            ->set('guardianLastName', 'Pérez')
+            ->set('relationship', 'madre')
+            ->set('primaryPhone', '6000-0000')
+            ->call('createGuardian')
+            ->assertSet('step', 3)
+            // El aula de Pre-Kinder aparece marcada como que requiere otra edad.
+            ->assertSee('requiere 4-5 años')
+            // Y si de todas formas se fuerza la selección, el backend la rechaza.
+            ->set('classroomId', (string) $classroom->id)
+            ->call('saveEnrollment')
+            ->assertHasErrors('classroomId');
+
+        $this->assertSame(0, Enrollment::where('student_id', $student->id)->count());
+    }
 }
