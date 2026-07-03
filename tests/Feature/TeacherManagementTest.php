@@ -139,7 +139,7 @@ class TeacherManagementTest extends TestCase
 
         $grade3 = $this->makeGrade($institution, '3°', 3);
         $grade7 = $this->makeGrade($institution, '7°', 7);
-        $ingles = $institution->subjects()->create(['name' => 'Inglés']);
+        $ingles = $institution->subjects()->create(['name' => 'Inglés', 'is_specialized' => true]);
         $grade3->subjects()->attach($ingles->id);
         $grade7->subjects()->attach($ingles->id);
 
@@ -150,12 +150,13 @@ class TeacherManagementTest extends TestCase
         $docenteUser = $this->makeStaffUser('docente', $team);
         $teacher = Teacher::create(['user_id' => $docenteUser->id, 'cedula' => '8-111-1111', 'first_name' => 'Laura', 'last_name' => 'Green']);
 
-        // Asigna las 3 aulas de un solo golpe (docente itinerante, ej. Inglés)
+        // Asigna las 3 aulas de un solo golpe (docente especialista itinerante, ej. Inglés)
         Livewire::actingAs($admin)
             ->test('pages::teachers.index')
             ->call('openAssignModal', $teacher->id)
+            ->set('assignMode', 'specialist')
             ->set('assignClassroomIds', [(string) $classroom3A->id, (string) $classroom3B->id, (string) $classroom7A->id])
-            ->set('assignSubjectId', (string) $ingles->id)
+            ->set('assignSubjectIds', [(string) $ingles->id])
             ->call('addAssignment')
             ->assertHasNoErrors();
 
@@ -178,7 +179,7 @@ class TeacherManagementTest extends TestCase
         $institution = $this->makeInstitution();
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
-        $ingles = $institution->subjects()->create(['name' => 'Inglés']);
+        $ingles = $institution->subjects()->create(['name' => 'Inglés', 'is_specialized' => true]);
         $grade->subjects()->attach($ingles->id);
 
         $classroomA = $this->makeClassroom($grade, $year, 'A');
@@ -197,8 +198,9 @@ class TeacherManagementTest extends TestCase
         Livewire::actingAs($admin)
             ->test('pages::teachers.index')
             ->call('openAssignModal', $teacher2->id)
+            ->set('assignMode', 'specialist')
             ->set('assignClassroomIds', [(string) $classroomA->id, (string) $classroomB->id])
-            ->set('assignSubjectId', (string) $ingles->id)
+            ->set('assignSubjectIds', [(string) $ingles->id])
             ->call('addAssignment')
             ->assertHasNoErrors();
 
@@ -206,5 +208,54 @@ class TeacherManagementTest extends TestCase
         $this->assertDatabaseHas('subject_assignments', ['classroom_id' => $classroomA->id, 'teacher_id' => $teacher1->id]);
         $this->assertDatabaseHas('subject_assignments', ['classroom_id' => $classroomB->id, 'teacher_id' => $teacher2->id]);
         $this->assertSame(1, SubjectAssignment::where('teacher_id', $teacher2->id)->count());
+    }
+
+    public function test_maestro_de_grado_recibe_automaticamente_todas_las_materias_generales_de_su_aula(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $admin = $this->makeStaffUser('admin', $team);
+
+        $institution = $this->makeInstitution();
+        $grade = $this->makeGrade($institution);
+        $year = $this->makeActiveYear($institution);
+
+        $espanol = $institution->subjects()->create(['name' => 'Español', 'is_specialized' => false]);
+        $matematica = $institution->subjects()->create(['name' => 'Matemática', 'is_specialized' => false]);
+        $sociales = $institution->subjects()->create(['name' => 'Ciencias Sociales', 'is_specialized' => false]);
+        $religion = $institution->subjects()->create(['name' => 'Religión', 'is_specialized' => false]);
+        $naturales = $institution->subjects()->create(['name' => 'Ciencias Naturales', 'is_specialized' => false]);
+        $ingles = $institution->subjects()->create(['name' => 'Inglés', 'is_specialized' => true]);
+        $grade->subjects()->attach([$espanol->id, $matematica->id, $sociales->id, $religion->id, $naturales->id, $ingles->id]);
+
+        $classroom = $this->makeClassroom($grade, $year, 'A');
+
+        $docenteUser = $this->makeStaffUser('docente', $team);
+        $teacher = Teacher::create(['user_id' => $docenteUser->id, 'cedula' => '8-333-3333', 'first_name' => 'Pedro', 'last_name' => 'Ruiz']);
+
+        // Solo se le asigna el aula — el modo "Maestro de grado" (por defecto) le da
+        // automáticamente todas las materias generales, sin elegirlas una por una.
+        Livewire::actingAs($admin)
+            ->test('pages::teachers.index')
+            ->call('openAssignModal', $teacher->id)
+            ->assertSet('assignMode', 'homeroom')
+            ->set('assignClassroomIds', [(string) $classroom->id])
+            ->call('addAssignment')
+            ->assertHasNoErrors();
+
+        // 5 materias generales, pero NO Inglés (esa es especializada, no se asigna sola)
+        $this->assertSame(5, SubjectAssignment::where('teacher_id', $teacher->id)->count());
+        $this->assertDatabaseMissing('subject_assignments', ['teacher_id' => $teacher->id, 'subject_id' => $ingles->id]);
+
+        Livewire::actingAs($docenteUser)
+            ->test('pages::scores.index')
+            ->set('classroomId', (string) $classroom->id)
+            ->assertSee('Español')
+            ->assertSee('Matemática')
+            ->assertSee('Ciencias Sociales')
+            ->assertSee('Religión')
+            ->assertSee('Ciencias Naturales')
+            ->assertDontSee('Inglés');
     }
 }

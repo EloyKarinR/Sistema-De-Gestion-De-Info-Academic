@@ -10,7 +10,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Subject extends Model
 {
     protected $fillable = [
-        'institution_id', 'name', 'code',
+        'institution_id', 'name', 'code', 'is_specialized',
+    ];
+
+    protected $casts = [
+        'is_specialized' => 'boolean',
     ];
 
     public function institution(): BelongsTo

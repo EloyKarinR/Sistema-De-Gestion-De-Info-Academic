@@ -41,10 +41,13 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
 
     public ?int $assignTeacherId = null;
 
+    public string $assignMode = 'homeroom';
+
     /** @var array<int, string> */
     public array $assignClassroomIds = [];
 
-    public string $assignSubjectId = '';
+    /** @var array<int, string> */
+    public array $assignSubjectIds = [];
 
     public function updatedSearch(): void
     {
@@ -143,7 +146,9 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
         $subjectIdSets = $classrooms->map(fn ($c) => $c->grade->subjects->pluck('id')->all())->all();
         $commonIds = $subjectIdSets ? array_intersect(...$subjectIdSets) : [];
 
-        return Subject::whereIn('id', $commonIds)->get();
+        // En modo "maestro de grado" las materias generales se asignan solas;
+        // aquí solo se eligen manualmente las especializadas (Inglés, Ed. Física, etc.).
+        return Subject::whereIn('id', $commonIds)->where('is_specialized', true)->get();
     }
 
     #[Computed]
@@ -164,15 +169,21 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
         $this->authorize('teacher.manage');
 
         $this->assignTeacherId = $teacherId;
+        $this->assignMode = 'homeroom';
         $this->assignClassroomIds = [];
-        $this->assignSubjectId = '';
+        $this->assignSubjectIds = [];
 
         Flux::modal('assign-subject')->show();
     }
 
+    public function updatedAssignMode(): void
+    {
+        $this->assignSubjectIds = [];
+    }
+
     public function updatedAssignClassroomIds(): void
     {
-        $this->assignSubjectId = '';
+        $this->assignSubjectIds = [];
     }
 
     public function addAssignment(): void
@@ -182,38 +193,71 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
         $this->validate([
             'assignClassroomIds' => 'required|array|min:1',
             'assignClassroomIds.*' => 'exists:classrooms,id',
-            'assignSubjectId' => 'required|exists:subjects,id',
         ]);
 
-        $alreadyAssigned = SubjectAssignment::where('subject_id', $this->assignSubjectId)
-            ->where('academic_year_id', $this->activeYear->id)
-            ->whereIn('classroom_id', $this->assignClassroomIds)
-            ->pluck('classroom_id')
-            ->all();
-
-        $toCreate = array_diff($this->assignClassroomIds, $alreadyAssigned);
-
-        foreach ($toCreate as $classroomId) {
-            SubjectAssignment::create([
-                'teacher_id' => $this->assignTeacherId,
-                'classroom_id' => $classroomId,
-                'subject_id' => $this->assignSubjectId,
-                'academic_year_id' => $this->activeYear->id,
+        if ($this->assignMode === 'specialist') {
+            $this->validate([
+                'assignSubjectIds' => 'required|array|min:1',
+                'assignSubjectIds.*' => 'exists:subjects,id',
             ]);
         }
 
+        // Construye la lista de pares (aula, materia) a crear según el modo.
+        $pairs = [];
+
+        foreach ($this->assignClassroomIds as $classroomId) {
+            if ($this->assignMode === 'homeroom') {
+                // Maestro de grado: todas las materias generales del grado de esa aula.
+                $classroom = Classroom::with('grade.subjects')->find($classroomId);
+                $subjectIds = $classroom->grade->subjects->where('is_specialized', false)->pluck('id');
+            } else {
+                $subjectIds = collect($this->assignSubjectIds);
+            }
+
+            foreach ($subjectIds as $subjectId) {
+                $pairs[] = ['classroom_id' => $classroomId, 'subject_id' => $subjectId];
+            }
+        }
+
+        $alreadyAssigned = SubjectAssignment::where('academic_year_id', $this->activeYear->id)
+            ->whereIn('classroom_id', $this->assignClassroomIds)
+            ->get(['classroom_id', 'subject_id']);
+
+        $created = 0;
+        $skipped = 0;
+
+        foreach ($pairs as $pair) {
+            $taken = $alreadyAssigned->contains(
+                fn ($a) => (string) $a->classroom_id === (string) $pair['classroom_id'] && (string) $a->subject_id === (string) $pair['subject_id']
+            );
+
+            if ($taken) {
+                $skipped++;
+
+                continue;
+            }
+
+            SubjectAssignment::create([
+                'teacher_id' => $this->assignTeacherId,
+                'classroom_id' => $pair['classroom_id'],
+                'subject_id' => $pair['subject_id'],
+                'academic_year_id' => $this->activeYear->id,
+            ]);
+            $created++;
+        }
+
         $this->assignClassroomIds = [];
-        $this->assignSubjectId = '';
+        $this->assignSubjectIds = [];
 
         unset($this->assignments);
 
-        if (count($alreadyAssigned) > 0) {
+        if ($skipped > 0) {
             Flux::toast(
                 variant: 'warning',
-                text: count($toCreate).' aula(s) asignada(s). '.count($alreadyAssigned).' ya tenían esta materia con otro docente y se omitieron.'
+                text: "{$created} asignación(es) creada(s). {$skipped} ya tenían esa materia con otro docente y se omitieron."
             );
         } else {
-            Flux::toast(variant: 'success', text: count($toCreate).' aula(s) asignada(s) correctamente.');
+            Flux::toast(variant: 'success', text: "{$created} asignación(es) creada(s) correctamente.");
         }
     }
 
@@ -385,8 +429,23 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
             </div>
 
             <div class="space-y-4 border-t border-zinc-100 dark:border-zinc-700 pt-4">
+                <flux:radio.group wire:model.live="assignMode" label="Tipo de docente" variant="segmented">
+                    <flux:radio value="homeroom" label="Maestro de grado" />
+                    <flux:radio value="specialist" label="Especialista" />
+                </flux:radio.group>
+
+                @if ($assignMode === 'homeroom')
+                    <flux:text class="text-sm text-zinc-500">
+                        Da automáticamente todas las materias generales (Español, Matemática, Ciencias Sociales, Ciencias Naturales, Religión) en el/los aula(s) que elijas — no hace falta indicarlas una por una.
+                    </flux:text>
+                @else
+                    <flux:text class="text-sm text-zinc-500">
+                        Elige la(s) materia(s) especializada(s) que da (Inglés, Educación Física, Expresión Artística, Tecnologías) en el/los aula(s) que elijas.
+                    </flux:text>
+                @endif
+
                 <div>
-                    <flux:label>Aulas (puedes elegir varias — útil para materias como Inglés o Educación Física, que no tienen un aula fija)</flux:label>
+                    <flux:label>Aulas (puedes elegir varias)</flux:label>
                     <div class="mt-2 max-h-40 overflow-y-auto space-y-1 rounded-lg border border-zinc-200 dark:border-zinc-700 p-3">
                         @forelse ($this->classroomsForAssignment as $classroom)
                             <flux:checkbox
@@ -401,12 +460,23 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
                     @error('assignClassroomIds') <flux:error>{{ $message }}</flux:error> @enderror
                 </div>
 
-                <flux:select wire:model="assignSubjectId" label="Materia" placeholder="Selecciona una materia" :disabled="empty($assignClassroomIds)">
-                    @foreach ($this->subjectsForAssignment as $subject)
-                        <flux:select.option value="{{ $subject->id }}">{{ $subject->name }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-                @error('assignSubjectId') <flux:error>{{ $message }}</flux:error> @enderror
+                @if ($assignMode === 'specialist')
+                    <div>
+                        <flux:label>Materias especializadas</flux:label>
+                        <div class="mt-2 max-h-40 overflow-y-auto space-y-1 rounded-lg border border-zinc-200 dark:border-zinc-700 p-3">
+                            @forelse ($this->subjectsForAssignment as $subject)
+                                <flux:checkbox
+                                    wire:model="assignSubjectIds"
+                                    value="{{ $subject->id }}"
+                                    label="{{ $subject->name }}"
+                                />
+                            @empty
+                                <flux:text class="text-sm text-zinc-400">Selecciona al menos un aula primero.</flux:text>
+                            @endforelse
+                        </div>
+                        @error('assignSubjectIds') <flux:error>{{ $message }}</flux:error> @enderror
+                    </div>
+                @endif
             </div>
         @endif
 
