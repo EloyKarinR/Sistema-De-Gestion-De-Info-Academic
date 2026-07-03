@@ -150,15 +150,14 @@ class TeacherManagementTest extends TestCase
         $docenteUser = $this->makeStaffUser('docente', $team);
         $teacher = Teacher::create(['user_id' => $docenteUser->id, 'cedula' => '8-111-1111', 'first_name' => 'Laura', 'last_name' => 'Green']);
 
-        $teachers = Livewire::actingAs($admin)->test('pages::teachers.index');
-
-        foreach ([$classroom3A, $classroom3B, $classroom7A] as $classroom) {
-            $teachers->call('openAssignModal', $teacher->id)
-                ->set('assignClassroomId', (string) $classroom->id)
-                ->set('assignSubjectId', (string) $ingles->id)
-                ->call('addAssignment')
-                ->assertHasNoErrors();
-        }
+        // Asigna las 3 aulas de un solo golpe (docente itinerante, ej. Inglés)
+        Livewire::actingAs($admin)
+            ->test('pages::teachers.index')
+            ->call('openAssignModal', $teacher->id)
+            ->set('assignClassroomIds', [(string) $classroom3A->id, (string) $classroom3B->id, (string) $classroom7A->id])
+            ->set('assignSubjectId', (string) $ingles->id)
+            ->call('addAssignment')
+            ->assertHasNoErrors();
 
         $this->assertSame(3, SubjectAssignment::where('teacher_id', $teacher->id)->count());
 
@@ -167,5 +166,45 @@ class TeacherManagementTest extends TestCase
             ->assertSee('3°-A')
             ->assertSee('3°-B')
             ->assertSee('7°-A');
+    }
+
+    public function test_asignacion_multiple_omite_aulas_que_ya_tienen_la_materia_con_otro_docente(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $admin = $this->makeStaffUser('admin', $team);
+
+        $institution = $this->makeInstitution();
+        $grade = $this->makeGrade($institution);
+        $year = $this->makeActiveYear($institution);
+        $ingles = $institution->subjects()->create(['name' => 'Inglés']);
+        $grade->subjects()->attach($ingles->id);
+
+        $classroomA = $this->makeClassroom($grade, $year, 'A');
+        $classroomB = $this->makeClassroom($grade, $year, 'B');
+
+        $teacher1 = Teacher::create(['user_id' => $this->makeStaffUser('docente', $team)->id, 'cedula' => '8-111-1111', 'first_name' => 'Laura', 'last_name' => 'Green']);
+        $teacher2 = Teacher::create(['user_id' => $this->makeStaffUser('docente', $team)->id, 'cedula' => '8-222-2222', 'first_name' => 'Pedro', 'last_name' => 'Ruiz']);
+
+        // El aula A ya tiene Inglés asignado al docente 1
+        SubjectAssignment::create([
+            'teacher_id' => $teacher1->id, 'classroom_id' => $classroomA->id,
+            'subject_id' => $ingles->id, 'academic_year_id' => $year->id,
+        ]);
+
+        // Al docente 2 se le intenta asignar Inglés en A (ya ocupada) y B (libre)
+        Livewire::actingAs($admin)
+            ->test('pages::teachers.index')
+            ->call('openAssignModal', $teacher2->id)
+            ->set('assignClassroomIds', [(string) $classroomA->id, (string) $classroomB->id])
+            ->set('assignSubjectId', (string) $ingles->id)
+            ->call('addAssignment')
+            ->assertHasNoErrors();
+
+        // Aula A sigue siendo del docente 1, aula B ya es del docente 2
+        $this->assertDatabaseHas('subject_assignments', ['classroom_id' => $classroomA->id, 'teacher_id' => $teacher1->id]);
+        $this->assertDatabaseHas('subject_assignments', ['classroom_id' => $classroomB->id, 'teacher_id' => $teacher2->id]);
+        $this->assertSame(1, SubjectAssignment::where('teacher_id', $teacher2->id)->count());
     }
 }

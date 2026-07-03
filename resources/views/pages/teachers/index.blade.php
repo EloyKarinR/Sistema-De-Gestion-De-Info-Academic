@@ -3,6 +3,7 @@
 use App\Enums\TeamRole;
 use App\Models\AcademicYear;
 use App\Models\Classroom;
+use App\Models\Subject;
 use App\Models\SubjectAssignment;
 use App\Models\Teacher;
 use App\Models\User;
@@ -40,7 +41,8 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
 
     public ?int $assignTeacherId = null;
 
-    public string $assignClassroomId = '';
+    /** @var array<int, string> */
+    public array $assignClassroomIds = [];
 
     public string $assignSubjectId = '';
 
@@ -131,11 +133,17 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
     #[Computed]
     public function subjectsForAssignment()
     {
-        if (! $this->assignClassroomId) {
+        if (empty($this->assignClassroomIds)) {
             return collect();
         }
 
-        return Classroom::with('grade.subjects')->find($this->assignClassroomId)?->grade->subjects ?? collect();
+        $classrooms = Classroom::with('grade.subjects')->whereIn('id', $this->assignClassroomIds)->get();
+
+        // Solo materias válidas para TODAS las aulas seleccionadas (pueden ser de niveles distintos).
+        $subjectIdSets = $classrooms->map(fn ($c) => $c->grade->subjects->pluck('id')->all())->all();
+        $commonIds = $subjectIdSets ? array_intersect(...$subjectIdSets) : [];
+
+        return Subject::whereIn('id', $commonIds)->get();
     }
 
     #[Computed]
@@ -156,13 +164,13 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
         $this->authorize('teacher.manage');
 
         $this->assignTeacherId = $teacherId;
-        $this->assignClassroomId = '';
+        $this->assignClassroomIds = [];
         $this->assignSubjectId = '';
 
         Flux::modal('assign-subject')->show();
     }
 
-    public function updatedAssignClassroomId(): void
+    public function updatedAssignClassroomIds(): void
     {
         $this->assignSubjectId = '';
     }
@@ -172,33 +180,41 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
         $this->authorize('teacher.manage');
 
         $this->validate([
-            'assignClassroomId' => 'required|exists:classrooms,id',
+            'assignClassroomIds' => 'required|array|min:1',
+            'assignClassroomIds.*' => 'exists:classrooms,id',
             'assignSubjectId' => 'required|exists:subjects,id',
         ]);
 
-        $exists = SubjectAssignment::where('classroom_id', $this->assignClassroomId)
-            ->where('subject_id', $this->assignSubjectId)
+        $alreadyAssigned = SubjectAssignment::where('subject_id', $this->assignSubjectId)
             ->where('academic_year_id', $this->activeYear->id)
-            ->exists();
+            ->whereIn('classroom_id', $this->assignClassroomIds)
+            ->pluck('classroom_id')
+            ->all();
 
-        if ($exists) {
-            $this->addError('assignSubjectId', 'Esa materia ya tiene un docente asignado en esta aula.');
+        $toCreate = array_diff($this->assignClassroomIds, $alreadyAssigned);
 
-            return;
+        foreach ($toCreate as $classroomId) {
+            SubjectAssignment::create([
+                'teacher_id' => $this->assignTeacherId,
+                'classroom_id' => $classroomId,
+                'subject_id' => $this->assignSubjectId,
+                'academic_year_id' => $this->activeYear->id,
+            ]);
         }
 
-        SubjectAssignment::create([
-            'teacher_id' => $this->assignTeacherId,
-            'classroom_id' => $this->assignClassroomId,
-            'subject_id' => $this->assignSubjectId,
-            'academic_year_id' => $this->activeYear->id,
-        ]);
-
-        $this->assignClassroomId = '';
+        $this->assignClassroomIds = [];
         $this->assignSubjectId = '';
 
         unset($this->assignments);
-        Flux::toast(variant: 'success', text: 'Materia asignada correctamente.');
+
+        if (count($alreadyAssigned) > 0) {
+            Flux::toast(
+                variant: 'warning',
+                text: count($toCreate).' aula(s) asignada(s). '.count($alreadyAssigned).' ya tenían esta materia con otro docente y se omitieron.'
+            );
+        } else {
+            Flux::toast(variant: 'success', text: count($toCreate).' aula(s) asignada(s) correctamente.');
+        }
     }
 
     public function removeAssignment(int $assignmentId): void
@@ -369,15 +385,23 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
             </div>
 
             <div class="space-y-4 border-t border-zinc-100 dark:border-zinc-700 pt-4">
-                <flux:select wire:model.live="assignClassroomId" label="Aula" placeholder="Selecciona un aula">
-                    @foreach ($this->classroomsForAssignment as $classroom)
-                        <flux:select.option value="{{ $classroom->id }}">
-                            {{ $classroom->grade->name }}-{{ $classroom->section }} ({{ $classroom->grade->educationLevel->name }})
-                        </flux:select.option>
-                    @endforeach
-                </flux:select>
+                <div>
+                    <flux:label>Aulas (puedes elegir varias — útil para materias como Inglés o Educación Física, que no tienen un aula fija)</flux:label>
+                    <div class="mt-2 max-h-40 overflow-y-auto space-y-1 rounded-lg border border-zinc-200 dark:border-zinc-700 p-3">
+                        @forelse ($this->classroomsForAssignment as $classroom)
+                            <flux:checkbox
+                                wire:model.live="assignClassroomIds"
+                                value="{{ $classroom->id }}"
+                                label="{{ $classroom->grade->name }}-{{ $classroom->section }} ({{ $classroom->grade->educationLevel->name }})"
+                            />
+                        @empty
+                            <flux:text class="text-sm text-zinc-400">No hay aulas registradas.</flux:text>
+                        @endforelse
+                    </div>
+                    @error('assignClassroomIds') <flux:error>{{ $message }}</flux:error> @enderror
+                </div>
 
-                <flux:select wire:model="assignSubjectId" label="Materia" placeholder="Selecciona una materia" :disabled="! $assignClassroomId">
+                <flux:select wire:model="assignSubjectId" label="Materia" placeholder="Selecciona una materia" :disabled="empty($assignClassroomIds)">
                     @foreach ($this->subjectsForAssignment as $subject)
                         <flux:select.option value="{{ $subject->id }}">{{ $subject->name }}</flux:select.option>
                     @endforeach
