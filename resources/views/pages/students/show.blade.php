@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Shift;
 use App\Enums\TeamRole;
 use App\Models\Guardian;
 use App\Models\Student;
@@ -332,7 +333,7 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
                             </div>
                             <div class="flex justify-between col-span-1">
                                 <dt class="text-zinc-500">Turno</dt>
-                                <dd class="capitalize">{{ $enrollment->classroom->shift }}</dd>
+                                <dd>{{ Shift::from($enrollment->classroom->shift)->labelWithTime() }}</dd>
                             </div>
                             <div class="flex justify-between col-span-1">
                                 <dt class="text-zinc-500">Registrado por</dt>

@@ -56,7 +56,7 @@
             </tr>
             <tr>
                 <td class="label">Turno:</td>
-                <td style="text-transform: capitalize;">{{ $enrollment->classroom->shift }}</td>
+                <td>{{ \App\Enums\Shift::from($enrollment->classroom->shift)->labelWithTime() }}</td>
                 <td class="label">Tipo:</td>
                 <td style="text-transform: capitalize;">{{ str_replace('_', ' ', $enrollment->enrollment_type) }}</td>
             </tr>

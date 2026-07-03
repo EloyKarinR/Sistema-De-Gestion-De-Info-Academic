@@ -19,7 +19,7 @@
         <h1>{{ $institution->name ?? 'Institución Educativa' }}</h1>
         <h2>
             Listado de Estudiantes — {{ $classroom->grade->name }}-{{ $classroom->section }}
-            ({{ $classroom->grade->educationLevel->name }}, turno {{ $classroom->shift }})
+            ({{ $classroom->grade->educationLevel->name }}, turno {{ \App\Enums\Shift::from($classroom->shift)->labelWithTime() }})
         </h2>
     </div>
 

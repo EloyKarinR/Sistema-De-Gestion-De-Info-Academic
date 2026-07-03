@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Shift;
 use App\Models\AcademicYear;
 use App\Models\Classroom;
 use App\Models\Enrollment;
@@ -621,7 +622,7 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
                         <div class="flex justify-between"><span class="text-zinc-500">Nombre</span><span class="font-medium">{{ $r->student->full_name }}</span></div>
                         <div class="flex justify-between"><span class="text-zinc-500">Cédula</span><span>{{ $r->student->cedula ?? '—' }}</span></div>
                         <div class="flex justify-between"><span class="text-zinc-500">Aula</span><span>{{ $r->classroom->grade->name }}-{{ $r->classroom->section }}</span></div>
-                        <div class="flex justify-between"><span class="text-zinc-500">Turno</span><span class="capitalize">{{ $r->classroom->shift }}</span></div>
+                        <div class="flex justify-between"><span class="text-zinc-500">Turno</span><span>{{ Shift::from($r->classroom->shift)->labelWithTime() }}</span></div>
                         <div class="flex justify-between"><span class="text-zinc-500">Tipo</span><span class="capitalize">{{ str_replace('_', ' ', $r->enrollment_type) }}</span></div>
                         <div class="flex justify-between"><span class="text-zinc-500">Fecha</span><span>{{ $r->enrollment_date->format('d/m/Y') }}</span></div>
                     </div>
