@@ -21,6 +21,9 @@ class DatabaseSeeder extends Seeder
             HabitSeeder::class,
             UserSeeder::class,
             StudentSeeder::class,
+            SubjectAssignmentSeeder::class,
+            GradeScoreSeeder::class,
+            GuardianPortalSeeder::class,
         ]);
     }
 }
