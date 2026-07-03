@@ -4,30 +4,36 @@ use App\Models\AcademicYear;
 use App\Models\Classroom;
 use App\Models\Grade;
 use App\Models\Institution;
+use Carbon\Carbon;
 use Flux\Flux;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Layout('layouts.app')] #[Title('Académico')] class extends Component {
-
+new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
+{
     // Formulario: nueva aula
-    public string $gradeId  = '';
-    public string $section  = '';
-    public string $shift     = 'matutino';
-    public int    $capacity  = 30;
+    public string $gradeId = '';
+
+    public string $section = '';
+
+    public string $shift = 'matutino';
+
+    public int $capacity = 30;
 
     // Formulario: nuevo año escolar
-    public int    $newYear   = 0;
+    public int $newYear = 0;
+
     public string $startDate = '';
-    public string $endDate   = '';
+
+    public string $endDate = '';
 
     public function mount(): void
     {
-        $this->newYear   = now()->year;
+        $this->newYear = now()->year;
         $this->startDate = now()->startOfYear()->format('Y-m-d');
-        $this->endDate   = now()->endOfYear()->format('Y-m-d');
+        $this->endDate = now()->endOfYear()->format('Y-m-d');
     }
 
     #[Computed]
@@ -43,21 +49,22 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component {
     {
         $institution = Institution::first();
 
-        return Grade::whereHas('educationLevel', fn ($q) =>
-            $q->where('institution_type', $institution?->type ?? 'escuela')
+        return Grade::whereHas('educationLevel', fn ($q) => $q->where('institution_type', $institution?->type ?? 'escuela')
         )
-        ->with('educationLevel')
-        ->orderBy('order')
-        ->get()
-        ->groupBy(fn ($g) => $g->educationLevel->name);
+            ->with('educationLevel')
+            ->orderBy('order')
+            ->get()
+            ->groupBy(fn ($g) => $g->educationLevel->name);
     }
 
     public function addClassroom(): void
     {
+        $this->authorize('academic.manage');
+
         $this->validate([
-            'gradeId'  => 'required|exists:grades,id',
-            'section'  => 'required|string|max:1|regex:/^[a-zA-Z]$/',
-            'shift'    => 'required|in:matutino,vespertino,nocturno',
+            'gradeId' => 'required|exists:grades,id',
+            'section' => 'required|string|max:1|regex:/^[a-zA-Z]$/',
+            'shift' => 'required|in:matutino,vespertino,nocturno',
             'capacity' => 'required|integer|min:1|max:60',
         ], [
             'section.regex' => 'La sección debe ser una sola letra (A-Z).',
@@ -67,6 +74,7 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component {
 
         if (! $year) {
             Flux::toast(variant: 'danger', text: 'No hay un año escolar activo.');
+
             return;
         }
 
@@ -79,19 +87,20 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component {
 
         if ($exists) {
             $this->addError('section', 'Ya existe esa sección para este grado en el año activo.');
+
             return;
         }
 
         Classroom::create([
             'academic_year_id' => $year->id,
-            'grade_id'         => $this->gradeId,
-            'section'          => $sectionUpper,
-            'shift'            => $this->shift,
-            'capacity'         => $this->capacity,
+            'grade_id' => $this->gradeId,
+            'section' => $sectionUpper,
+            'shift' => $this->shift,
+            'capacity' => $this->capacity,
         ]);
 
         $this->reset(['gradeId', 'section']);
-        $this->shift    = 'matutino';
+        $this->shift = 'matutino';
         $this->capacity = 30;
 
         Flux::modal('add-classroom')->close();
@@ -102,10 +111,13 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component {
 
     public function deleteClassroom(int $id): void
     {
+        $this->authorize('academic.manage');
+
         $classroom = Classroom::withCount(['enrollments' => fn ($q) => $q->where('status', 'activo')])->findOrFail($id);
 
         if ($classroom->enrollments_count > 0) {
             Flux::toast(variant: 'danger', text: 'No se puede eliminar un aula con estudiantes activos.');
+
             return;
         }
 
@@ -117,31 +129,34 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component {
 
     public function createYear(): void
     {
+        $this->authorize('academic.manage');
+
         $this->validate([
-            'newYear'   => 'required|integer|min:2020|max:2099',
+            'newYear' => 'required|integer|min:2020|max:2099',
             'startDate' => 'required|date',
-            'endDate'   => 'required|date|after:startDate',
+            'endDate' => 'required|date|after:startDate',
         ]);
 
         $institution = Institution::first();
 
         if (! $institution) {
             Flux::toast(variant: 'danger', text: 'Configura los datos de la institución primero.');
+
             return;
         }
 
         AcademicYear::where('is_active', true)->update(['is_active' => false]);
 
-        $start = \Carbon\Carbon::parse($this->startDate);
-        $end   = \Carbon\Carbon::parse($this->endDate);
-        $days  = (int) ($start->diffInDays($end) / 3);
+        $start = Carbon::parse($this->startDate);
+        $end = Carbon::parse($this->endDate);
+        $days = (int) ($start->diffInDays($end) / 3);
 
         $year = AcademicYear::create([
             'institution_id' => $institution->id,
-            'year'           => $this->newYear,
-            'start_date'     => $this->startDate,
-            'end_date'       => $this->endDate,
-            'is_active'      => true,
+            'year' => $this->newYear,
+            'start_date' => $this->startDate,
+            'end_date' => $this->endDate,
+            'is_active' => true,
         ]);
 
         $year->periods()->createMany([
@@ -170,9 +185,11 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component {
     <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-4">
         <div class="flex items-center justify-between">
             <flux:heading size="lg">Año Escolar Activo</flux:heading>
-            <flux:modal.trigger name="create-year">
-                <flux:button icon="plus" size="sm">Nuevo año</flux:button>
-            </flux:modal.trigger>
+            @can('academic.manage')
+                <flux:modal.trigger name="create-year">
+                    <flux:button icon="plus" size="sm">Nuevo año</flux:button>
+                </flux:modal.trigger>
+            @endcan
         </div>
 
         @if ($this->activeYear)
@@ -204,11 +221,13 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component {
     <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-4">
         <div class="flex items-center justify-between">
             <flux:heading size="lg">Aulas</flux:heading>
-            @if ($this->activeYear)
-                <flux:modal.trigger name="add-classroom">
-                    <flux:button icon="plus" size="sm" variant="primary">Agregar aula</flux:button>
-                </flux:modal.trigger>
-            @endif
+            @can('academic.manage')
+                @if ($this->activeYear)
+                    <flux:modal.trigger name="add-classroom">
+                        <flux:button icon="plus" size="sm" variant="primary">Agregar aula</flux:button>
+                    </flux:modal.trigger>
+                @endif
+            @endcan
         </div>
 
         @if ($this->activeYear && $this->activeYear->classrooms->count())
@@ -220,7 +239,9 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component {
                     <flux:table.column>Turno</flux:table.column>
                     <flux:table.column>Capacidad</flux:table.column>
                     <flux:table.column>Matriculados</flux:table.column>
-                    <flux:table.column></flux:table.column>
+                    @can('academic.manage')
+                        <flux:table.column></flux:table.column>
+                    @endcan
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($this->activeYear->classrooms->sortBy(fn($c) => $c->grade->order) as $classroom)
@@ -235,15 +256,17 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component {
                             <flux:table.cell>
                                 {{ $classroom->enrollments->where('status', 'activo')->count() }} / {{ $classroom->capacity }}
                             </flux:table.cell>
-                            <flux:table.cell>
-                                <flux:button
-                                    icon="trash"
-                                    size="sm"
-                                    variant="ghost"
-                                    wire:click="deleteClassroom({{ $classroom->id }})"
-                                    wire:confirm="¿Eliminar este aula?"
-                                />
-                            </flux:table.cell>
+                            @can('academic.manage')
+                                <flux:table.cell>
+                                    <flux:button
+                                        icon="trash"
+                                        size="sm"
+                                        variant="ghost"
+                                        wire:click="deleteClassroom({{ $classroom->id }})"
+                                        wire:confirm="¿Eliminar este aula?"
+                                    />
+                                </flux:table.cell>
+                            @endcan
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>

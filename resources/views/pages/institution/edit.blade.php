@@ -8,7 +8,8 @@ use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
-new #[Layout('layouts.app')] #[Title('Institución')] class extends Component {
+new #[Layout('layouts.app')] #[Title('Institución')] class extends Component
+{
     use WithFileUploads;
 
     public ?Institution $institution = null;
@@ -42,27 +43,29 @@ new #[Layout('layouts.app')] #[Title('Institución')] class extends Component {
         $this->institution = Institution::first();
 
         if ($this->institution) {
-            $this->name          = $this->institution->name;
-            $this->type          = $this->institution->type;
-            $this->ruc           = $this->institution->ruc ?? '';
-            $this->address       = $this->institution->address;
-            $this->phone         = $this->institution->phone ?? '';
-            $this->email         = $this->institution->email ?? '';
+            $this->name = $this->institution->name;
+            $this->type = $this->institution->type;
+            $this->ruc = $this->institution->ruc ?? '';
+            $this->address = $this->institution->address;
+            $this->phone = $this->institution->phone ?? '';
+            $this->email = $this->institution->email ?? '';
             $this->director_name = $this->institution->director_name ?? '';
         }
     }
 
     public function save(): void
     {
+        $this->authorize('institution.edit');
+
         $this->validate();
 
         $data = [
-            'name'          => $this->name,
-            'type'          => $this->type,
-            'ruc'           => $this->ruc ?: null,
-            'address'       => $this->address,
-            'phone'         => $this->phone ?: null,
-            'email'         => $this->email ?: null,
+            'name' => $this->name,
+            'type' => $this->type,
+            'ruc' => $this->ruc ?: null,
+            'address' => $this->address,
+            'phone' => $this->phone ?: null,
+            'email' => $this->email ?: null,
             'director_name' => $this->director_name ?: null,
         ];
 
@@ -92,7 +95,14 @@ new #[Layout('layouts.app')] #[Title('Institución')] class extends Component {
             </div>
         </div>
 
+        <fieldset @disabled(! auth()->user()->can('institution.edit'))>
         <form wire:submit="save" class="space-y-6">
+
+            @cannot('institution.edit')
+                <div class="rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-3 text-sm text-zinc-500">
+                    Solo lectura — no tienes permiso para editar los datos de la institución.
+                </div>
+            @endcannot
 
             {{-- Logo actual --}}
             @if ($institution?->logo)
@@ -187,12 +197,15 @@ new #[Layout('layouts.app')] #[Title('Institución')] class extends Component {
             </div>
 
             {{-- Botón guardar --}}
-            <div class="flex justify-end">
-                <flux:button type="submit" variant="primary" wire:loading.attr="disabled">
-                    <span wire:loading.remove>Guardar cambios</span>
-                    <span wire:loading>Guardando...</span>
-                </flux:button>
-            </div>
+            @can('institution.edit')
+                <div class="flex justify-end">
+                    <flux:button type="submit" variant="primary" wire:loading.attr="disabled">
+                        <span wire:loading.remove>Guardar cambios</span>
+                        <span wire:loading>Guardando...</span>
+                    </flux:button>
+                </div>
+            @endcan
 
         </form>
+        </fieldset>
     </div>

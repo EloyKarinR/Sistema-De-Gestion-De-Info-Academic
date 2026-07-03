@@ -21,34 +21,50 @@
                 </flux:sidebar.group>
 
                 {{-- Administración --}}
-                <flux:sidebar.group heading="Administración" class="grid">
-                    <flux:sidebar.item icon="building-office-2" :href="route('institution.edit')" :current="request()->routeIs('institution.edit')" wire:navigate>
-                        Institución
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="academic-cap" :href="route('academic.index')" :current="request()->routeIs('academic.index')" wire:navigate>
-                        Académico
-                    </flux:sidebar.item>
-                </flux:sidebar.group>
+                @canany(['institution.view', 'academic.view'])
+                    <flux:sidebar.group heading="Administración" class="grid">
+                        @can('institution.view')
+                            <flux:sidebar.item icon="building-office-2" :href="route('institution.edit')" :current="request()->routeIs('institution.edit')" wire:navigate>
+                                Institución
+                            </flux:sidebar.item>
+                        @endcan
+                        @can('academic.view')
+                            <flux:sidebar.item icon="academic-cap" :href="route('academic.index')" :current="request()->routeIs('academic.index')" wire:navigate>
+                                Académico
+                            </flux:sidebar.item>
+                        @endcan
+                    </flux:sidebar.group>
+                @endcanany
 
                 {{-- Gestión --}}
-                <flux:sidebar.group heading="Gestión" class="grid">
-                    <flux:sidebar.item icon="users" :href="route('students.index')" :current="request()->routeIs('students.*')" wire:navigate>
-                        Estudiantes
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="user-group" href="#" wire:navigate>
-                        Acudientes
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="clipboard-document-list" :href="route('enrollments.index')" :current="request()->routeIs('enrollments.*')" wire:navigate>
-                        Matrículas
-                    </flux:sidebar.item>
-                </flux:sidebar.group>
+                @canany(['student.view', 'guardian.view', 'enrollment.view'])
+                    <flux:sidebar.group heading="Gestión" class="grid">
+                        @can('student.view')
+                            <flux:sidebar.item icon="users" :href="route('students.index')" :current="request()->routeIs('students.*')" wire:navigate>
+                                Estudiantes
+                            </flux:sidebar.item>
+                        @endcan
+                        @can('guardian.view')
+                            <flux:sidebar.item icon="user-group" href="#" wire:navigate>
+                                Acudientes
+                            </flux:sidebar.item>
+                        @endcan
+                        @can('enrollment.view')
+                            <flux:sidebar.item icon="clipboard-document-list" :href="route('enrollments.index')" :current="request()->routeIs('enrollments.*')" wire:navigate>
+                                Matrículas
+                            </flux:sidebar.item>
+                        @endcan
+                    </flux:sidebar.group>
+                @endcanany
 
                 {{-- Reportes --}}
-                <flux:sidebar.group heading="Reportes" class="grid">
-                    <flux:sidebar.item icon="chart-bar" href="#" wire:navigate>
-                        Reportes
-                    </flux:sidebar.item>
-                </flux:sidebar.group>
+                @can('reports.view')
+                    <flux:sidebar.group heading="Reportes" class="grid">
+                        <flux:sidebar.item icon="chart-bar" href="#" wire:navigate>
+                            Reportes
+                        </flux:sidebar.item>
+                    </flux:sidebar.group>
+                @endcan
             </flux:sidebar.nav>
 
             <flux:spacer />

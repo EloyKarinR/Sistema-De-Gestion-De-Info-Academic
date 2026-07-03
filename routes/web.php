@@ -15,12 +15,12 @@ Route::prefix('{current_team}')
     });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::livewire('institution', 'pages::institution.edit')->name('institution.edit');
-    Route::livewire('academic', 'pages::academic.index')->name('academic.index');
-    Route::livewire('students', 'pages::students.index')->name('students.index');
-    Route::livewire('students/{student}', 'pages::students.show')->name('students.show');
-    Route::livewire('enrollments', 'pages::enrollments.index')->name('enrollments.index');
-    Route::livewire('enrollments/create', 'pages::enrollments.create')->name('enrollments.create');
+    Route::livewire('institution', 'pages::institution.edit')->name('institution.edit')->middleware('can:institution.view');
+    Route::livewire('academic', 'pages::academic.index')->name('academic.index')->middleware('can:academic.view');
+    Route::livewire('students', 'pages::students.index')->name('students.index')->middleware('can:student.view');
+    Route::livewire('students/{student}', 'pages::students.show')->name('students.show')->middleware('can:student.view');
+    Route::livewire('enrollments', 'pages::enrollments.index')->name('enrollments.index')->middleware('can:enrollment.view');
+    Route::livewire('enrollments/create', 'pages::enrollments.create')->name('enrollments.create')->middleware('can:enrollment.create');
 });
 
 Route::middleware(['auth'])->group(function () {

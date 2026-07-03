@@ -9,7 +9,8 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Layout('layouts.app')] #[Title('Matrículas')] class extends Component {
+new #[Layout('layouts.app')] #[Title('Matrículas')] class extends Component
+{
     use WithPagination;
 
     #[Url(as: 'q')]
@@ -36,9 +37,9 @@ new #[Layout('layouts.app')] #[Title('Matrículas')] class extends Component {
         return Enrollment::where('academic_year_id', $this->activeYear->id)
             ->when($this->search, function ($q) {
                 $q->whereHas('student', function ($q) {
-                    $q->whereRaw('LOWER(first_name) LIKE ?', ['%' . strtolower($this->search) . '%'])
-                      ->orWhereRaw('LOWER(last_name) LIKE ?', ['%' . strtolower($this->search) . '%'])
-                      ->orWhere('cedula', 'LIKE', '%' . $this->search . '%');
+                    $q->whereRaw('LOWER(first_name) LIKE ?', ['%'.strtolower($this->search).'%'])
+                        ->orWhereRaw('LOWER(last_name) LIKE ?', ['%'.strtolower($this->search).'%'])
+                        ->orWhere('cedula', 'LIKE', '%'.$this->search.'%');
                 });
             })
             ->with([
@@ -65,16 +66,18 @@ new #[Layout('layouts.app')] #[Title('Matrículas')] class extends Component {
                 @endif
             </flux:subheading>
         </div>
-        @if ($this->activeYear)
-            <flux:button
-                variant="primary"
-                icon="plus"
-                :href="route('enrollments.create')"
-                wire:navigate
-            >
-                Nueva matrícula
-            </flux:button>
-        @endif
+        @can('enrollment.create')
+            @if ($this->activeYear)
+                <flux:button
+                    variant="primary"
+                    icon="plus"
+                    :href="route('enrollments.create')"
+                    wire:navigate
+                >
+                    Nueva matrícula
+                </flux:button>
+            @endif
+        @endcan
     </div>
 
     @if (! $this->activeYear)
