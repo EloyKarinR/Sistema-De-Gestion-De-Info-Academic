@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Shift;
 use App\Models\AcademicYear;
 use App\Models\Classroom;
 use App\Models\Student;
@@ -20,12 +21,20 @@ new #[Layout('layouts.app')] #[Title('Estudiantes')] class extends Component
     #[Url(as: 'aula')]
     public string $classroomId = '';
 
+    #[Url(as: 'turno')]
+    public string $shiftFilter = '';
+
     public function updatedSearch(): void
     {
         $this->resetPage();
     }
 
     public function updatedClassroomId(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedShiftFilter(): void
     {
         $this->resetPage();
     }
@@ -68,6 +77,7 @@ new #[Layout('layouts.app')] #[Title('Estudiantes')] class extends Component
                 });
             })
             ->when($this->classroomId, fn ($q) => $q->where('enrollments.classroom_id', $this->classroomId))
+            ->when($this->shiftFilter, fn ($q) => $q->where('classrooms.shift', $this->shiftFilter))
             ->with([
                 'activeEnrollment.classroom.grade',
                 'guardians' => fn ($q) => $q->wherePivot('is_primary', true),
@@ -104,6 +114,13 @@ new #[Layout('layouts.app')] #[Title('Estudiantes')] class extends Component
                 <flux:select.option value="{{ $classroom->id }}">
                     {{ $classroom->grade->name }}-{{ $classroom->section }} ({{ $classroom->grade->educationLevel->name }})
                 </flux:select.option>
+            @endforeach
+        </flux:select>
+
+        <flux:select wire:model.live="shiftFilter" placeholder="Todos los turnos" class="max-w-xs">
+            <flux:select.option value="">Todos los turnos</flux:select.option>
+            @foreach (Shift::cases() as $shiftOption)
+                <flux:select.option value="{{ $shiftOption->value }}">{{ $shiftOption->labelWithTime() }}</flux:select.option>
             @endforeach
         </flux:select>
     </div>

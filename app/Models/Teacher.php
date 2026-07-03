@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Teacher extends Model
 {
     protected $fillable = [
-        'user_id', 'cedula', 'first_name', 'last_name', 'phone', 'specialization',
+        'user_id', 'cedula', 'first_name', 'last_name', 'phone', 'specialization', 'shift',
     ];
 
     public function user(): BelongsTo
@@ -29,6 +29,6 @@ class Teacher extends Model
 
     public function getFullNameAttribute(): string
     {
-        return $this->first_name . ' ' . $this->last_name;
+        return $this->first_name.' '.$this->last_name;
     }
 }

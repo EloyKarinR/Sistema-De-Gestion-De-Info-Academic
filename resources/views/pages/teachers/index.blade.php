@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Shift;
 use App\Enums\TeamRole;
 use App\Models\AcademicYear;
 use App\Models\Classroom;
@@ -11,6 +12,7 @@ use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -25,6 +27,9 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
     #[Url(as: 'q')]
     public string $search = '';
 
+    #[Url(as: 'turno')]
+    public string $shiftFilter = '';
+
     public string $firstName = '';
 
     public string $lastName = '';
@@ -38,6 +43,8 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
     public string $phone = '';
 
     public string $specialization = '';
+
+    public string $shift = 'matutino';
 
     public ?int $assignTeacherId = null;
 
@@ -54,6 +61,11 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
         $this->resetPage();
     }
 
+    public function updatedShiftFilter(): void
+    {
+        $this->resetPage();
+    }
+
     #[Computed]
     public function teachers()
     {
@@ -65,6 +77,7 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
                         ->orWhere('cedula', 'LIKE', '%'.$this->search.'%');
                 });
             })
+            ->when($this->shiftFilter, fn ($q) => $q->where('shift', $this->shiftFilter))
             ->with('user')
             ->orderBy('last_name')
             ->paginate(15);
@@ -82,6 +95,7 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
             'password' => 'required|string|min:8',
             'phone' => 'nullable|string|max:20',
             'specialization' => 'nullable|string|max:255',
+            'shift' => 'required|in:matutino,vespertino',
         ]);
 
         $team = Auth::user()->currentTeam;
@@ -103,10 +117,12 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
                 'last_name' => $this->lastName,
                 'phone' => $this->phone ?: null,
                 'specialization' => $this->specialization ?: null,
+                'shift' => $this->shift,
             ]);
         });
 
         $this->reset(['firstName', 'lastName', 'cedula', 'email', 'password', 'phone', 'specialization']);
+        $this->shift = 'matutino';
 
         Flux::modal('add-teacher')->close();
         Flux::toast(variant: 'success', text: 'Docente registrado correctamente.');
@@ -121,13 +137,20 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
     }
 
     #[Computed]
+    public function assignTeacher(): ?Teacher
+    {
+        return $this->assignTeacherId ? Teacher::find($this->assignTeacherId) : null;
+    }
+
+    #[Computed]
     public function classroomsForAssignment()
     {
-        if (! $this->activeYear) {
+        if (! $this->activeYear || ! $this->assignTeacher) {
             return collect();
         }
 
         return Classroom::where('academic_year_id', $this->activeYear->id)
+            ->where('shift', $this->assignTeacher->shift)
             ->with('grade.educationLevel')
             ->get()
             ->sortBy(fn ($c) => $c->grade->order);
@@ -192,7 +215,12 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
 
         $this->validate([
             'assignClassroomIds' => 'required|array|min:1',
-            'assignClassroomIds.*' => 'exists:classrooms,id',
+            'assignClassroomIds.*' => [
+                'required',
+                Rule::exists('classrooms', 'id')->where('shift', $this->assignTeacher?->shift),
+            ],
+        ], [
+            'assignClassroomIds.*.exists' => 'Solo puedes asignar aulas del turno de este docente.',
         ]);
 
         if ($this->assignMode === 'specialist') {
@@ -288,13 +316,22 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
         @endcan
     </div>
 
-    {{-- Búsqueda --}}
-    <flux:input
-        wire:model.live.debounce.300ms="search"
-        placeholder="Buscar por nombre o cédula..."
-        icon="magnifying-glass"
-        class="max-w-sm"
-    />
+    {{-- Búsqueda y filtro --}}
+    <div class="flex flex-wrap items-end gap-3">
+        <flux:input
+            wire:model.live.debounce.300ms="search"
+            placeholder="Buscar por nombre o cédula..."
+            icon="magnifying-glass"
+            class="max-w-sm"
+        />
+
+        <flux:select wire:model.live="shiftFilter" placeholder="Todos los turnos" class="max-w-xs">
+            <flux:select.option value="">Todos los turnos</flux:select.option>
+            @foreach (Shift::cases() as $shiftOption)
+                <flux:select.option value="{{ $shiftOption->value }}">{{ $shiftOption->labelWithTime() }}</flux:select.option>
+            @endforeach
+        </flux:select>
+    </div>
 
     {{-- Tabla --}}
     @if ($this->teachers->count())
@@ -302,6 +339,7 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
             <flux:table.columns>
                 <flux:table.column>Nombre</flux:table.column>
                 <flux:table.column>Cédula</flux:table.column>
+                <flux:table.column>Turno</flux:table.column>
                 <flux:table.column>Teléfono</flux:table.column>
                 <flux:table.column>Especialización</flux:table.column>
                 <flux:table.column>Correo</flux:table.column>
@@ -317,6 +355,13 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
                         </flux:table.cell>
                         <flux:table.cell class="text-zinc-500">
                             {{ $teacher->cedula }}
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            @if ($teacher->shift)
+                                <flux:badge size="sm" color="zinc">{{ Shift::from($teacher->shift)->label() }}</flux:badge>
+                            @else
+                                <span class="text-zinc-400">—</span>
+                            @endif
                         </flux:table.cell>
                         <flux:table.cell>
                             {{ $teacher->phone ?? '—' }}
@@ -388,6 +433,13 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
                 <flux:input wire:model="phone" label="Teléfono" placeholder="6000-0000" type="tel" />
                 <flux:input wire:model="specialization" label="Especialización" placeholder="Educación Primaria" />
             </div>
+
+            <flux:select wire:model="shift" label="Turno">
+                @foreach (Shift::cases() as $shiftOption)
+                    <flux:select.option value="{{ $shiftOption->value }}">{{ $shiftOption->labelWithTime() }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            @error('shift') <flux:error>{{ $message }}</flux:error> @enderror
         </div>
 
         <div class="mt-6 flex justify-end gap-2">
@@ -403,7 +455,12 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
     {{-- Modal: Materias asignadas --}}
     <flux:modal name="assign-subject" class="max-w-md">
         <flux:heading size="lg" class="mb-1">Materias asignadas</flux:heading>
-        <flux:subheading class="mb-4">Aulas y materias que este docente puede calificar este año escolar.</flux:subheading>
+        <flux:subheading class="mb-4">
+            Aulas y materias que este docente puede calificar este año escolar.
+            @if ($this->assignTeacher?->shift)
+                Solo se muestran aulas del turno {{ Shift::from($this->assignTeacher->shift)->label() }}.
+            @endif
+        </flux:subheading>
 
         @if (! $this->activeYear)
             <flux:text class="text-zinc-500">No hay un año escolar activo.</flux:text>

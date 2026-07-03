@@ -62,14 +62,27 @@ class SchoolStructureSeeder extends Seeder
             $this->fillGrade($grade, $year, $team, targetMatutino: 3, targetVespertino: 2, capacity: 30, sections: ['A', 'B', 'C', 'D', 'E']);
         }
 
-        // Karla Sánchez (Inglés) da clases en TODAS las aulas del año, incluidas las nuevas.
+        // Karla Sánchez (Inglés, turno matutino) y Diana Fuentes (Inglés, turno vespertino)
+        // dan clases en todas las aulas de su turno, incluidas las nuevas.
         $ingles = Subject::where('name', 'Inglés')->first();
         $karla = Teacher::where('last_name', 'Sánchez')->where('first_name', 'Karla')->first();
+        $diana = Teacher::where('last_name', 'Fuentes')->where('first_name', 'Diana')->first();
 
         if ($ingles && $karla) {
-            foreach (Classroom::where('academic_year_id', $year->id)->get() as $classroom) {
+            foreach (Classroom::where('academic_year_id', $year->id)->where('shift', 'matutino')->get() as $classroom) {
                 SubjectAssignment::firstOrCreate([
                     'teacher_id' => $karla->id,
+                    'classroom_id' => $classroom->id,
+                    'subject_id' => $ingles->id,
+                    'academic_year_id' => $year->id,
+                ]);
+            }
+        }
+
+        if ($ingles && $diana) {
+            foreach (Classroom::where('academic_year_id', $year->id)->where('shift', 'vespertino')->get() as $classroom) {
+                SubjectAssignment::firstOrCreate([
+                    'teacher_id' => $diana->id,
                     'classroom_id' => $classroom->id,
                     'subject_id' => $ingles->id,
                     'academic_year_id' => $year->id,
@@ -166,6 +179,7 @@ class SchoolStructureSeeder extends Seeder
             'first_name' => $firstName,
             'last_name' => $lastName,
             'specialization' => 'Maestra de grado',
+            'shift' => $classroom->shift,
         ]);
 
         $generalSubjectIds = $grade->subjects()->where('is_specialized', false)->pluck('subjects.id');

@@ -49,9 +49,11 @@ class UserSeeder extends Seeder
             'last_name' => 'Wilson',
             'phone' => '6000-0001',
             'specialization' => 'Educación Primaria',
+            'shift' => 'matutino',
         ]);
 
-        // Docente itinerante: da la misma materia (Inglés) en varias aulas y niveles.
+        // Especialista de Inglés, turno matutino. Da la misma materia en varias aulas y niveles,
+        // pero solo dentro de su turno — el turno vespertino tiene su propia especialista (más abajo).
         $inglesUser = User::create([
             'name' => 'Karla Sánchez',
             'email' => 'karla.sanchez@siga.pa',
@@ -68,6 +70,27 @@ class UserSeeder extends Seeder
             'last_name' => 'Sánchez',
             'phone' => '6000-0002',
             'specialization' => 'Inglés',
+            'shift' => 'matutino',
+        ]);
+
+        // Especialista de Inglés, turno vespertino.
+        $inglesVespertinoUser = User::create([
+            'name' => 'Diana Fuentes',
+            'email' => 'diana.fuentes@siga.pa',
+            'password' => Hash::make('password'),
+            'current_team_id' => $team->id,
+        ]);
+        $inglesVespertinoUser->assignRole('docente');
+        $team->members()->attach($inglesVespertinoUser->id, ['role' => TeamRole::Member->value]);
+
+        Teacher::create([
+            'user_id' => $inglesVespertinoUser->id,
+            'cedula' => '8-234-5679',
+            'first_name' => 'Diana',
+            'last_name' => 'Fuentes',
+            'phone' => '6000-0003',
+            'specialization' => 'Inglés',
+            'shift' => 'vespertino',
         ]);
     }
 }

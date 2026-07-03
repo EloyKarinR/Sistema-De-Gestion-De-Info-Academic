@@ -18,6 +18,7 @@ class SubjectAssignmentSeeder extends Seeder
 
         $barbara = Teacher::where('last_name', 'Wilson')->first();
         $karla = Teacher::where('last_name', 'Sánchez')->first();
+        $diana = Teacher::where('last_name', 'Fuentes')->first();
 
         $classroom4D = Classroom::where('section', 'D')
             ->whereHas('grade', fn ($q) => $q->where('number', 4))
@@ -37,10 +38,20 @@ class SubjectAssignmentSeeder extends Seeder
             ]);
         }
 
-        // Karla Sánchez: Inglés en todas las aulas del año (docente itinerante)
-        foreach (Classroom::where('academic_year_id', $year->id)->get() as $classroom) {
+        // Karla Sánchez: Inglés en todas las aulas del turno matutino (docente itinerante, un solo turno).
+        foreach (Classroom::where('academic_year_id', $year->id)->where('shift', 'matutino')->get() as $classroom) {
             SubjectAssignment::create([
                 'teacher_id' => $karla->id,
+                'classroom_id' => $classroom->id,
+                'subject_id' => $ingles->id,
+                'academic_year_id' => $year->id,
+            ]);
+        }
+
+        // Diana Fuentes: Inglés en todas las aulas del turno vespertino.
+        foreach (Classroom::where('academic_year_id', $year->id)->where('shift', 'vespertino')->get() as $classroom) {
+            SubjectAssignment::create([
+                'teacher_id' => $diana->id,
                 'classroom_id' => $classroom->id,
                 'subject_id' => $ingles->id,
                 'academic_year_id' => $year->id,

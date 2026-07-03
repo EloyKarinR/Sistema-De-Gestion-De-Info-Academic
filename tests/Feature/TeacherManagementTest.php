@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Classroom;
 use App\Models\Enrollment;
 use App\Models\Student;
 use App\Models\SubjectAssignment;
@@ -86,7 +87,7 @@ class TeacherManagementTest extends TestCase
         $period = $year->periods()->first();
 
         $docenteUser = $this->makeStaffUser('docente', $team);
-        $teacher = Teacher::create(['user_id' => $docenteUser->id, 'cedula' => '8-000-0000', 'first_name' => 'Carlos', 'last_name' => 'Mendoza']);
+        $teacher = Teacher::create(['user_id' => $docenteUser->id, 'cedula' => '8-000-0000', 'first_name' => 'Carlos', 'last_name' => 'Mendoza', 'shift' => 'matutino']);
 
         SubjectAssignment::create([
             'teacher_id' => $teacher->id, 'classroom_id' => $classroomA->id,
@@ -148,7 +149,7 @@ class TeacherManagementTest extends TestCase
         $classroom7A = $this->makeClassroom($grade7, $year, 'A');
 
         $docenteUser = $this->makeStaffUser('docente', $team);
-        $teacher = Teacher::create(['user_id' => $docenteUser->id, 'cedula' => '8-111-1111', 'first_name' => 'Laura', 'last_name' => 'Green']);
+        $teacher = Teacher::create(['user_id' => $docenteUser->id, 'cedula' => '8-111-1111', 'first_name' => 'Laura', 'last_name' => 'Green', 'shift' => 'matutino']);
 
         // Asigna las 3 aulas de un solo golpe (docente especialista itinerante, ej. Inglés)
         Livewire::actingAs($admin)
@@ -185,8 +186,8 @@ class TeacherManagementTest extends TestCase
         $classroomA = $this->makeClassroom($grade, $year, 'A');
         $classroomB = $this->makeClassroom($grade, $year, 'B');
 
-        $teacher1 = Teacher::create(['user_id' => $this->makeStaffUser('docente', $team)->id, 'cedula' => '8-111-1111', 'first_name' => 'Laura', 'last_name' => 'Green']);
-        $teacher2 = Teacher::create(['user_id' => $this->makeStaffUser('docente', $team)->id, 'cedula' => '8-222-2222', 'first_name' => 'Pedro', 'last_name' => 'Ruiz']);
+        $teacher1 = Teacher::create(['user_id' => $this->makeStaffUser('docente', $team)->id, 'cedula' => '8-111-1111', 'first_name' => 'Laura', 'last_name' => 'Green', 'shift' => 'matutino']);
+        $teacher2 = Teacher::create(['user_id' => $this->makeStaffUser('docente', $team)->id, 'cedula' => '8-222-2222', 'first_name' => 'Pedro', 'last_name' => 'Ruiz', 'shift' => 'matutino']);
 
         // El aula A ya tiene Inglés asignado al docente 1
         SubjectAssignment::create([
@@ -232,7 +233,7 @@ class TeacherManagementTest extends TestCase
         $classroom = $this->makeClassroom($grade, $year, 'A');
 
         $docenteUser = $this->makeStaffUser('docente', $team);
-        $teacher = Teacher::create(['user_id' => $docenteUser->id, 'cedula' => '8-333-3333', 'first_name' => 'Pedro', 'last_name' => 'Ruiz']);
+        $teacher = Teacher::create(['user_id' => $docenteUser->id, 'cedula' => '8-333-3333', 'first_name' => 'Pedro', 'last_name' => 'Ruiz', 'shift' => 'matutino']);
 
         // Solo se le asigna el aula — el modo "Maestro de grado" (por defecto) le da
         // automáticamente todas las materias generales, sin elegirlas una por una.
@@ -257,5 +258,47 @@ class TeacherManagementTest extends TestCase
             ->assertSee('Religión')
             ->assertSee('Ciencias Naturales')
             ->assertDontSee('Inglés');
+    }
+
+    public function test_no_se_puede_asignar_a_un_docente_un_aula_de_otro_turno(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $admin = $this->makeStaffUser('admin', $team);
+
+        $institution = $this->makeInstitution();
+        $grade = $this->makeGrade($institution);
+        $year = $this->makeActiveYear($institution);
+        $ingles = $institution->subjects()->create(['name' => 'Inglés', 'is_specialized' => true]);
+        $grade->subjects()->attach($ingles->id);
+
+        $classroomMatutino = $this->makeClassroom($grade, $year, 'A');
+        $classroomVespertino = Classroom::create([
+            'grade_id' => $grade->id, 'academic_year_id' => $year->id,
+            'section' => 'B', 'shift' => 'vespertino', 'capacity' => 30,
+        ]);
+
+        $docenteUser = $this->makeStaffUser('docente', $team);
+        $teacher = Teacher::create(['user_id' => $docenteUser->id, 'cedula' => '8-444-4444', 'first_name' => 'Sofía', 'last_name' => 'Bravo', 'shift' => 'matutino']);
+
+        // El selector de aulas (calculado a partir del turno del docente) no debe ofrecer el aula vespertina.
+        Livewire::actingAs($admin)
+            ->test('pages::teachers.index')
+            ->call('openAssignModal', $teacher->id)
+            ->assertSee("{$grade->name}-A")
+            ->assertDontSee("{$grade->name}-B");
+
+        // Y si de todas formas se intenta forzar el aula equivocada, el backend la rechaza.
+        Livewire::actingAs($admin)
+            ->test('pages::teachers.index')
+            ->call('openAssignModal', $teacher->id)
+            ->set('assignMode', 'specialist')
+            ->set('assignClassroomIds', [(string) $classroomVespertino->id])
+            ->set('assignSubjectIds', [(string) $ingles->id])
+            ->call('addAssignment')
+            ->assertHasErrors('assignClassroomIds.0');
+
+        $this->assertSame(0, SubjectAssignment::where('teacher_id', $teacher->id)->count());
     }
 }

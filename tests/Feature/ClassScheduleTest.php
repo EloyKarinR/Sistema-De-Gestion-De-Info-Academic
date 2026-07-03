@@ -36,7 +36,7 @@ class ClassScheduleTest extends TestCase
 
         $classroom = $this->makeClassroom($grade, $year);
 
-        $teacher = Teacher::create(['user_id' => $this->makeStaffUser('docente', $team)->id, 'cedula' => '8-999-0000', 'first_name' => 'Carlos', 'last_name' => 'Mendoza']);
+        $teacher = Teacher::create(['user_id' => $this->makeStaffUser('docente', $team)->id, 'cedula' => '8-999-0000', 'first_name' => 'Carlos', 'last_name' => 'Mendoza', 'shift' => 'matutino']);
         SubjectAssignment::create(['teacher_id' => $teacher->id, 'classroom_id' => $classroom->id, 'subject_id' => $matematica->id, 'academic_year_id' => $year->id]);
         SubjectAssignment::create(['teacher_id' => $teacher->id, 'classroom_id' => $classroom->id, 'subject_id' => $espanol->id, 'academic_year_id' => $year->id]);
         SubjectAssignment::create(['teacher_id' => $teacher->id, 'classroom_id' => $classroom->id, 'subject_id' => $ingles->id, 'academic_year_id' => $year->id]);
@@ -70,7 +70,7 @@ class ClassScheduleTest extends TestCase
         $grade->subjects()->attach($matematica->id);
         $classroom = $this->makeClassroom($grade, $year);
 
-        $teacher = Teacher::create(['user_id' => $this->makeStaffUser('docente', $team)->id, 'cedula' => '8-999-0001', 'first_name' => 'Carlos', 'last_name' => 'Mendoza']);
+        $teacher = Teacher::create(['user_id' => $this->makeStaffUser('docente', $team)->id, 'cedula' => '8-999-0001', 'first_name' => 'Carlos', 'last_name' => 'Mendoza', 'shift' => 'matutino']);
         SubjectAssignment::create(['teacher_id' => $teacher->id, 'classroom_id' => $classroom->id, 'subject_id' => $matematica->id, 'academic_year_id' => $year->id]);
 
         (new ClassScheduleSeeder)->run();

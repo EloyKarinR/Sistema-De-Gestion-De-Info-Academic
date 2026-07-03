@@ -3,6 +3,7 @@
 use App\Enums\Shift;
 use App\Models\AcademicYear;
 use App\Models\Classroom;
+use App\Models\ClassSchedule;
 use App\Models\Grade;
 use App\Models\Institution;
 use Carbon\Carbon;
@@ -45,6 +46,18 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
         return AcademicYear::where('is_active', true)
             ->with(['periods', 'classrooms.grade.educationLevel'])
             ->first();
+    }
+
+    #[Computed]
+    public function classroomsByShift()
+    {
+        if (! $this->activeYear) {
+            return collect();
+        }
+
+        return $this->activeYear->classrooms
+            ->sortBy(fn ($c) => $c->grade->order)
+            ->groupBy('shift');
     }
 
     #[Computed]
@@ -197,7 +210,7 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
             return collect();
         }
 
-        return \App\Models\ClassSchedule::where('classroom_id', $this->scheduleClassroomId)
+        return ClassSchedule::where('classroom_id', $this->scheduleClassroomId)
             ->with('subjectAssignment.subject', 'subjectAssignment.teacher')
             ->orderBy('start_time')
             ->get()
@@ -265,54 +278,60 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
         </div>
 
         @if ($this->activeYear && $this->activeYear->classrooms->count())
-            <flux:table>
-                <flux:table.columns>
-                    <flux:table.column>Grado</flux:table.column>
-                    <flux:table.column>Sección</flux:table.column>
-                    <flux:table.column>Nivel</flux:table.column>
-                    <flux:table.column>Turno</flux:table.column>
-                    <flux:table.column>Capacidad</flux:table.column>
-                    <flux:table.column>Matriculados</flux:table.column>
-                    <flux:table.column></flux:table.column>
-                </flux:table.columns>
-                <flux:table.rows>
-                    @foreach ($this->activeYear->classrooms->sortBy(fn($c) => $c->grade->order) as $classroom)
-                        <flux:table.row>
-                            <flux:table.cell class="font-medium">{{ $classroom->grade->name }}</flux:table.cell>
-                            <flux:table.cell>{{ $classroom->section }}</flux:table.cell>
-                            <flux:table.cell>
-                                <flux:badge size="sm" color="zinc">{{ $classroom->grade->educationLevel->name }}</flux:badge>
-                            </flux:table.cell>
-                            <flux:table.cell>{{ Shift::from($classroom->shift)->labelWithTime() }}</flux:table.cell>
-                            <flux:table.cell>{{ $classroom->capacity }}</flux:table.cell>
-                            <flux:table.cell>
-                                {{ $classroom->enrollments->where('status', 'activo')->count() }} / {{ $classroom->capacity }}
-                            </flux:table.cell>
-                            <flux:table.cell>
-                                <div class="flex gap-2">
-                                    <flux:button
-                                        icon="calendar-days"
-                                        size="sm"
-                                        variant="ghost"
-                                        wire:click="viewSchedule({{ $classroom->id }})"
-                                    >
-                                        Horario
-                                    </flux:button>
-                                    @can('academic.manage')
-                                        <flux:button
-                                            icon="trash"
-                                            size="sm"
-                                            variant="ghost"
-                                            wire:click="deleteClassroom({{ $classroom->id }})"
-                                            wire:confirm="¿Eliminar este aula?"
-                                        />
-                                    @endcan
-                                </div>
-                            </flux:table.cell>
-                        </flux:table.row>
-                    @endforeach
-                </flux:table.rows>
-            </flux:table>
+            <div class="space-y-6">
+                @foreach (Shift::cases() as $shiftOption)
+                    @continue($this->classroomsByShift->get($shiftOption->value, collect())->isEmpty())
+                    <div class="space-y-2">
+                        <flux:subheading>Turno {{ $shiftOption->labelWithTime() }}</flux:subheading>
+                        <flux:table>
+                            <flux:table.columns>
+                                <flux:table.column>Grado</flux:table.column>
+                                <flux:table.column>Sección</flux:table.column>
+                                <flux:table.column>Nivel</flux:table.column>
+                                <flux:table.column>Capacidad</flux:table.column>
+                                <flux:table.column>Matriculados</flux:table.column>
+                                <flux:table.column></flux:table.column>
+                            </flux:table.columns>
+                            <flux:table.rows>
+                                @foreach ($this->classroomsByShift->get($shiftOption->value, collect()) as $classroom)
+                                    <flux:table.row>
+                                        <flux:table.cell class="font-medium">{{ $classroom->grade->name }}</flux:table.cell>
+                                        <flux:table.cell>{{ $classroom->section }}</flux:table.cell>
+                                        <flux:table.cell>
+                                            <flux:badge size="sm" color="zinc">{{ $classroom->grade->educationLevel->name }}</flux:badge>
+                                        </flux:table.cell>
+                                        <flux:table.cell>{{ $classroom->capacity }}</flux:table.cell>
+                                        <flux:table.cell>
+                                            {{ $classroom->enrollments->where('status', 'activo')->count() }} / {{ $classroom->capacity }}
+                                        </flux:table.cell>
+                                        <flux:table.cell>
+                                            <div class="flex gap-2">
+                                                <flux:button
+                                                    icon="calendar-days"
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    wire:click="viewSchedule({{ $classroom->id }})"
+                                                >
+                                                    Horario
+                                                </flux:button>
+                                                @can('academic.manage')
+                                                    <flux:button
+                                                        icon="trash"
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        wire:click="deleteClassroom({{ $classroom->id }})"
+                                                        wire:confirm="¿Eliminar este aula?"
+                                                    />
+                                                @endcan
+                                            </div>
+                                        </flux:table.cell>
+                                    </flux:table.row>
+                                @endforeach
+                            </flux:table.rows>
+                        </flux:table>
+                    </div>
+                @endforeach
+            </div>
         @elseif ($this->activeYear)
             <flux:text class="text-zinc-500">No hay aulas registradas para este año. Agrega la primera.</flux:text>
         @else

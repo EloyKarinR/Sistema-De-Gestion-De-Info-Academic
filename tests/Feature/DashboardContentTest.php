@@ -58,7 +58,7 @@ class DashboardContentTest extends TestCase
         $grade->subjects()->attach($matematica->id);
         $classroom = $this->makeClassroom($grade, $year);
 
-        $teacher = Teacher::create(['user_id' => $docenteUser->id, 'cedula' => '8-000-0000', 'first_name' => 'Carlos', 'last_name' => 'Mendoza']);
+        $teacher = Teacher::create(['user_id' => $docenteUser->id, 'cedula' => '8-000-0000', 'first_name' => 'Carlos', 'last_name' => 'Mendoza', 'shift' => 'matutino']);
         SubjectAssignment::create([
             'teacher_id' => $teacher->id, 'classroom_id' => $classroom->id,
             'subject_id' => $matematica->id, 'academic_year_id' => $year->id,
