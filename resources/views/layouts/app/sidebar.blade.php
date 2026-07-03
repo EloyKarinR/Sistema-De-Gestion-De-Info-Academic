@@ -79,7 +79,7 @@
                 {{-- Reportes --}}
                 @can('reports.view')
                     <flux:sidebar.group heading="Reportes" class="grid">
-                        <flux:sidebar.item icon="chart-bar" href="#" wire:navigate>
+                        <flux:sidebar.item icon="chart-bar" :href="route('reports.index')" :current="request()->routeIs('reports.*')" wire:navigate>
                             Reportes
                         </flux:sidebar.item>
                     </flux:sidebar.group>

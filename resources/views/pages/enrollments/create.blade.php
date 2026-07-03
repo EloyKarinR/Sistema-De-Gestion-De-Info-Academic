@@ -58,9 +58,18 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
     // Recibo
     public ?int $enrollmentId = null;
 
+    public string $previewUrl = '';
+
     public function mount(): void
     {
         $this->enrollmentDate = now()->format('Y-m-d');
+    }
+
+    public function previewConstancia(): void
+    {
+        $this->previewUrl = route('reports.constancia', $this->enrollmentId);
+
+        Flux::modal('preview-constancia')->show();
     }
 
     #[Computed]
@@ -660,6 +669,11 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
                     </flux:button>
                     <div class="flex gap-2">
                         <flux:button icon="printer" onclick="window.print()">Imprimir recibo</flux:button>
+                        @can('reports.print')
+                            <flux:button icon="document-text" wire:click="previewConstancia">
+                                Ver constancia (PDF)
+                            </flux:button>
+                        @endcan
                         <flux:button variant="primary" wire:click="newEnrollment">Nueva matrícula</flux:button>
                     </div>
                 </div>
@@ -667,4 +681,17 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
         @endif
 
     @endif
+
+    {{-- Modal: Vista previa de la constancia --}}
+    <flux:modal name="preview-constancia" class="max-w-4xl">
+        <flux:heading size="lg" class="mb-4">Constancia de matrícula</flux:heading>
+
+        @if ($previewUrl)
+            <iframe
+                src="{{ $previewUrl }}"
+                class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700"
+                style="height: 75vh;"
+            ></iframe>
+        @endif
+    </flux:modal>
 </div>

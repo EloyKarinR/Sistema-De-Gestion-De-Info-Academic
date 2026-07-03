@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ReportController;
 use App\Http\Middleware\EnsureTeamMembership;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
@@ -25,6 +26,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('portal', 'pages::portal.index')->name('portal.index')->middleware('can:portal.view');
     Route::livewire('enrollments', 'pages::enrollments.index')->name('enrollments.index')->middleware('can:enrollment.view');
     Route::livewire('enrollments/create', 'pages::enrollments.create')->name('enrollments.create')->middleware('can:enrollment.create');
+    Route::livewire('reports', 'pages::reports.index')->name('reports.index')->middleware('can:reports.view');
+});
+
+Route::middleware(['auth', 'verified', 'can:reports.print'])->group(function () {
+    Route::get('reports/boletin/{student}', [ReportController::class, 'boletin'])->name('reports.boletin');
+    Route::get('reports/constancia/{enrollment}', [ReportController::class, 'constancia'])->name('reports.constancia');
+    Route::get('reports/listado/{classroom}', [ReportController::class, 'listado'])->name('reports.listado');
 });
 
 Route::middleware(['auth'])->group(function () {
