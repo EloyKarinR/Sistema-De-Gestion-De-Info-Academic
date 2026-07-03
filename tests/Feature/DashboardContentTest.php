@@ -99,4 +99,37 @@ class DashboardContentTest extends TestCase
             ->assertSee($grade->name.'-'.$classroom->section)
             ->assertDontSee('Matrículas activas');
     }
+
+    public function test_el_medidor_de_cupos_cambia_de_color_segun_ocupacion(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $admin = $this->makeStaffUser('admin', $team);
+
+        $institution = $this->makeInstitution();
+        $grade = $this->makeGrade($institution);
+        $year = $this->makeActiveYear($institution);
+
+        // Normal (< 70%): 5 de 20
+        $classroomLow = $this->makeClassroom($grade, $year, 'A');
+        $classroomLow->update(['capacity' => 20]);
+        for ($i = 0; $i < 5; $i++) {
+            $student = Student::create(['first_name' => "Est{$i}", 'last_name' => 'Low', 'birth_date' => '2018-01-01', 'sex' => 'F', 'address' => 'Calle 2']);
+            Enrollment::create(['student_id' => $student->id, 'classroom_id' => $classroomLow->id, 'academic_year_id' => $year->id, 'registered_by' => $admin->id, 'enrollment_date' => '2026-02-01', 'status' => 'activo', 'enrollment_type' => 'nuevo_ingreso']);
+        }
+
+        // Crítico (>= 90%): 19 de 20
+        $classroomHigh = $this->makeClassroom($grade, $year, 'B');
+        $classroomHigh->update(['capacity' => 20]);
+        for ($i = 0; $i < 19; $i++) {
+            $student = Student::create(['first_name' => "Est{$i}", 'last_name' => 'High', 'birth_date' => '2018-01-01', 'sex' => 'F', 'address' => 'Calle 2']);
+            Enrollment::create(['student_id' => $student->id, 'classroom_id' => $classroomHigh->id, 'academic_year_id' => $year->id, 'registered_by' => $admin->id, 'enrollment_date' => '2026-02-01', 'status' => 'activo', 'enrollment_type' => 'nuevo_ingreso']);
+        }
+
+        $html = Livewire::actingAs($admin)->test('pages::dashboard')->html();
+
+        $this->assertStringContainsString('bg-blue-500', $html);
+        $this->assertStringContainsString('bg-red-500', $html);
+    }
 }
