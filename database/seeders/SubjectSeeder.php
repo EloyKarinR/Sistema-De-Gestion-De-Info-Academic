@@ -27,16 +27,39 @@ class SubjectSeeder extends Seeder
             'Tecnologías' => true,
         ];
 
-        foreach ($subjects as $name => $isSpecialized) {
+        // Áreas propias de Preescolar (Pre-Kinder y Kinder) — no son las mismas
+        // que las de Básica General, son áreas de desarrollo, no asignaturas.
+        $preescolarSubjects = [
+            'Desarrollo Personal y Social' => false,
+            'Comunicación y Lenguaje' => false,
+            'Pensamiento Lógico-Matemático' => false,
+            'Exploración del Entorno' => false,
+        ];
+
+        foreach ([...$subjects, ...$preescolarSubjects] as $name => $isSpecialized) {
             $institution->subjects()->create(['name' => $name, 'is_specialized' => $isSpecialized]);
         }
 
-        // Asignar todas las materias a los grados de Básica General (1°-6°)
-        $basicaGrades = Grade::whereHas('educationLevel', fn ($q) => $q->where('name', 'Básica General'))->get();
         $allSubjects = $institution->subjects;
 
+        // Básica General (1°-6°): las 9 materias académicas.
+        $basicaGrades = Grade::whereHas('educationLevel', fn ($q) => $q->where('name', 'Básica General'))->get();
+        $basicaSubjectIds = $allSubjects->whereIn('name', array_keys($subjects))->pluck('id');
+
         foreach ($basicaGrades as $grade) {
-            $grade->subjects()->sync($allSubjects->pluck('id'));
+            $grade->subjects()->sync($basicaSubjectIds);
+        }
+
+        // Preescolar (Pre-Kinder, Kinder): sus propias áreas + las especializadas
+        // que también aplican a esta edad (Inglés, Ed. Física, Expresión Artística).
+        // Tecnologías queda fuera — no aplica a esta edad.
+        $preescolarGrades = Grade::whereHas('educationLevel', fn ($q) => $q->where('name', 'Pre-Escolar'))->get();
+        $preescolarSubjectIds = $allSubjects
+            ->whereIn('name', [...array_keys($preescolarSubjects), 'Inglés', 'Salud y Educación Física', 'Expresión Artística'])
+            ->pluck('id');
+
+        foreach ($preescolarGrades as $grade) {
+            $grade->subjects()->sync($preescolarSubjectIds);
         }
     }
 }
