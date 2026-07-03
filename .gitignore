@@ -6,9 +6,8 @@
 /storage/*.key
 /storage/pail
 /vendor
-.env
-.env.backup
-.env.production
+.env*
+!.env.example
 .phpactor.json
 .phpunit.result.cache
 Homestead.json
@@ -25,3 +24,12 @@ yarn-error.log
 tokenGithub.txt
 *.token
 *.secret
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+credentials.json
+.DS_Store
+Thumbs.db
