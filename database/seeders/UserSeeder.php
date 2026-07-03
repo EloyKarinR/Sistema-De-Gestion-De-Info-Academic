@@ -52,45 +52,37 @@ class UserSeeder extends Seeder
             'shift' => 'matutino',
         ]);
 
-        // Especialista de Inglés, turno matutino. Da la misma materia en varias aulas y niveles,
-        // pero solo dentro de su turno — el turno vespertino tiene su propia especialista (más abajo).
-        $inglesUser = User::create([
-            'name' => 'Karla Sánchez',
-            'email' => 'karla.sanchez@siga.pa',
+        // Docentes especialistas itinerantes: dan la misma materia en varias aulas
+        // y niveles, pero cada uno(a) solo dentro de un turno fijo (uno por turno).
+        $this->createSpecialistTeacher($team, 'Karla', 'Sánchez', 'karla.sanchez@siga.pa', '8-234-5678', '6000-0002', 'Inglés', 'matutino');
+        $this->createSpecialistTeacher($team, 'Diana', 'Fuentes', 'diana.fuentes@siga.pa', '8-234-5679', '6000-0003', 'Inglés', 'vespertino');
+        $this->createSpecialistTeacher($team, 'Rogelio', 'Batista', 'rogelio.batista@siga.pa', '8-234-5680', '6000-0004', 'Educación Física', 'matutino');
+        $this->createSpecialistTeacher($team, 'Yolanda', 'Prado', 'yolanda.prado@siga.pa', '8-234-5681', '6000-0005', 'Educación Física', 'vespertino');
+        $this->createSpecialistTeacher($team, 'Marisol', 'Chen', 'marisol.chen@siga.pa', '8-234-5682', '6000-0006', 'Expresión Artística', 'matutino');
+        $this->createSpecialistTeacher($team, 'Andrés', 'Quirós', 'andres.quiros@siga.pa', '8-234-5683', '6000-0007', 'Expresión Artística', 'vespertino');
+        $this->createSpecialistTeacher($team, 'Iván', 'Cedeño', 'ivan.cedeno@siga.pa', '8-234-5684', '6000-0008', 'Tecnologías', 'matutino');
+        $this->createSpecialistTeacher($team, 'Lucía', 'Ábrego', 'lucia.abrego@siga.pa', '8-234-5685', '6000-0009', 'Tecnologías', 'vespertino');
+    }
+
+    private function createSpecialistTeacher(Team $team, string $firstName, string $lastName, string $email, string $cedula, string $phone, string $specialization, string $shift): Teacher
+    {
+        $user = User::create([
+            'name' => "{$firstName} {$lastName}",
+            'email' => $email,
             'password' => Hash::make('password'),
             'current_team_id' => $team->id,
         ]);
-        $inglesUser->assignRole('docente');
-        $team->members()->attach($inglesUser->id, ['role' => TeamRole::Member->value]);
+        $user->assignRole('docente');
+        $team->members()->attach($user->id, ['role' => TeamRole::Member->value]);
 
-        Teacher::create([
-            'user_id' => $inglesUser->id,
-            'cedula' => '8-234-5678',
-            'first_name' => 'Karla',
-            'last_name' => 'Sánchez',
-            'phone' => '6000-0002',
-            'specialization' => 'Inglés',
-            'shift' => 'matutino',
-        ]);
-
-        // Especialista de Inglés, turno vespertino.
-        $inglesVespertinoUser = User::create([
-            'name' => 'Diana Fuentes',
-            'email' => 'diana.fuentes@siga.pa',
-            'password' => Hash::make('password'),
-            'current_team_id' => $team->id,
-        ]);
-        $inglesVespertinoUser->assignRole('docente');
-        $team->members()->attach($inglesVespertinoUser->id, ['role' => TeamRole::Member->value]);
-
-        Teacher::create([
-            'user_id' => $inglesVespertinoUser->id,
-            'cedula' => '8-234-5679',
-            'first_name' => 'Diana',
-            'last_name' => 'Fuentes',
-            'phone' => '6000-0003',
-            'specialization' => 'Inglés',
-            'shift' => 'vespertino',
+        return Teacher::create([
+            'user_id' => $user->id,
+            'cedula' => $cedula,
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'phone' => $phone,
+            'specialization' => $specialization,
+            'shift' => $shift,
         ]);
     }
 }

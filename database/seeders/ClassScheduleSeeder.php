@@ -59,7 +59,7 @@ class ClassScheduleSeeder extends Seeder
         'Desarrollo Personal y Social' => 6,
         'Comunicación y Lenguaje' => 8,
         'Pensamiento Lógico-Matemático' => 6,
-        'Exploración del Entorno' => 5,
+        'Expresión Corporal y Psicomotricidad' => 5,
     ];
 
     public function run(): void

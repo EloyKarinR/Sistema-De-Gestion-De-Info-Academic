@@ -62,32 +62,39 @@ class SchoolStructureSeeder extends Seeder
             $this->fillGrade($grade, $year, $team, targetMatutino: 3, targetVespertino: 2, capacity: 30, sections: ['A', 'B', 'C', 'D', 'E']);
         }
 
-        // Karla Sánchez (Inglés, turno matutino) y Diana Fuentes (Inglés, turno vespertino)
-        // dan clases en todas las aulas de su turno, incluidas las nuevas.
-        $ingles = Subject::where('name', 'Inglés')->first();
-        $karla = Teacher::where('last_name', 'Sánchez')->where('first_name', 'Karla')->first();
-        $diana = Teacher::where('last_name', 'Fuentes')->where('first_name', 'Diana')->first();
+        // Docentes especialistas itinerantes: dan su materia en todas las aulas de su
+        // turno cuyo grado la tenga en el plan de estudios, incluidas las aulas nuevas.
+        $this->assignItinerantSpecialist('Karla', 'Sánchez', 'Inglés', 'matutino', $year);
+        $this->assignItinerantSpecialist('Diana', 'Fuentes', 'Inglés', 'vespertino', $year);
+        $this->assignItinerantSpecialist('Rogelio', 'Batista', 'Salud y Educación Física', 'matutino', $year);
+        $this->assignItinerantSpecialist('Yolanda', 'Prado', 'Salud y Educación Física', 'vespertino', $year);
+        $this->assignItinerantSpecialist('Marisol', 'Chen', 'Expresión Artística', 'matutino', $year);
+        $this->assignItinerantSpecialist('Andrés', 'Quirós', 'Expresión Artística', 'vespertino', $year);
+        $this->assignItinerantSpecialist('Iván', 'Cedeño', 'Tecnologías', 'matutino', $year);
+        $this->assignItinerantSpecialist('Lucía', 'Ábrego', 'Tecnologías', 'vespertino', $year);
+    }
 
-        if ($ingles && $karla) {
-            foreach (Classroom::where('academic_year_id', $year->id)->where('shift', 'matutino')->get() as $classroom) {
-                SubjectAssignment::firstOrCreate([
-                    'teacher_id' => $karla->id,
-                    'classroom_id' => $classroom->id,
-                    'subject_id' => $ingles->id,
-                    'academic_year_id' => $year->id,
-                ]);
-            }
+    private function assignItinerantSpecialist(string $teacherFirstName, string $teacherLastName, string $subjectName, string $shift, AcademicYear $year): void
+    {
+        $teacher = Teacher::where('first_name', $teacherFirstName)->where('last_name', $teacherLastName)->first();
+        $subject = Subject::where('name', $subjectName)->first();
+
+        if (! $teacher || ! $subject) {
+            return;
         }
 
-        if ($ingles && $diana) {
-            foreach (Classroom::where('academic_year_id', $year->id)->where('shift', 'vespertino')->get() as $classroom) {
-                SubjectAssignment::firstOrCreate([
-                    'teacher_id' => $diana->id,
-                    'classroom_id' => $classroom->id,
-                    'subject_id' => $ingles->id,
-                    'academic_year_id' => $year->id,
-                ]);
-            }
+        $classrooms = Classroom::where('academic_year_id', $year->id)
+            ->where('shift', $shift)
+            ->whereHas('grade.subjects', fn ($q) => $q->where('subjects.id', $subject->id))
+            ->get();
+
+        foreach ($classrooms as $classroom) {
+            SubjectAssignment::firstOrCreate([
+                'teacher_id' => $teacher->id,
+                'classroom_id' => $classroom->id,
+                'subject_id' => $subject->id,
+                'academic_year_id' => $year->id,
+            ]);
         }
     }
 

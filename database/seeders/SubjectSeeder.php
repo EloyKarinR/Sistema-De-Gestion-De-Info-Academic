@@ -27,13 +27,15 @@ class SubjectSeeder extends Seeder
             'Tecnologías' => true,
         ];
 
-        // Áreas propias de Preescolar (Pre-Kinder y Kinder) — no son las mismas
-        // que las de Básica General, son áreas de desarrollo, no asignaturas.
+        // Áreas de desarrollo propias de Preescolar (Pre-Kinder y Kinder), según el
+        // programa de MEDUCA: área socioafectiva, área cognoscitiva/lingüística
+        // (dividida aquí en lenguaje y lógico-matemática) y área psicomotora.
+        // No son las mismas asignaturas que las de Básica General.
         $preescolarSubjects = [
             'Desarrollo Personal y Social' => false,
             'Comunicación y Lenguaje' => false,
             'Pensamiento Lógico-Matemático' => false,
-            'Exploración del Entorno' => false,
+            'Expresión Corporal y Psicomotricidad' => false,
         ];
 
         foreach ([...$subjects, ...$preescolarSubjects] as $name => $isSpecialized) {
@@ -51,11 +53,13 @@ class SubjectSeeder extends Seeder
         }
 
         // Preescolar (Pre-Kinder, Kinder): sus propias áreas + las especializadas
-        // que también aplican a esta edad (Inglés, Ed. Física, Expresión Artística).
-        // Tecnologías queda fuera — no aplica a esta edad.
+        // que también aplican a esta edad (Inglés, Expresión Artística). La
+        // Educación Física de Básica General queda fuera — el área psicomotora
+        // de preescolar (Expresión Corporal y Psicomotricidad) ya la cubre, y
+        // Tecnologías tampoco aplica a esta edad.
         $preescolarGrades = Grade::whereHas('educationLevel', fn ($q) => $q->where('name', 'Pre-Escolar'))->get();
         $preescolarSubjectIds = $allSubjects
-            ->whereIn('name', [...array_keys($preescolarSubjects), 'Inglés', 'Salud y Educación Física', 'Expresión Artística'])
+            ->whereIn('name', [...array_keys($preescolarSubjects), 'Inglés', 'Expresión Artística'])
             ->pluck('id');
 
         foreach ($preescolarGrades as $grade) {
