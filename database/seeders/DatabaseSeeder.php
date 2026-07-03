@@ -22,7 +22,10 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             StudentSeeder::class,
             SubjectAssignmentSeeder::class,
+            SchoolStructureSeeder::class,
+            ClassScheduleSeeder::class,
             GradeScoreSeeder::class,
+            StudentRosterSeeder::class,
             GuardianPortalSeeder::class,
         ]);
     }

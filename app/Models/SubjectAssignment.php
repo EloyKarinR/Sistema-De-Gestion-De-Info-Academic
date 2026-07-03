@@ -4,12 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SubjectAssignment extends Model
 {
     protected $fillable = [
         'teacher_id', 'subject_id', 'classroom_id', 'academic_year_id',
     ];
+
+    public function classSchedules(): HasMany
+    {
+        return $this->hasMany(ClassSchedule::class);
+    }
 
     public function teacher(): BelongsTo
     {

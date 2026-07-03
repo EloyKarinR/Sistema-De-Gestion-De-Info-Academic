@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Shift;
 use App\Models\AcademicYear;
 use App\Models\Classroom;
 use App\Models\Grade;
@@ -28,6 +29,8 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
     public string $startDate = '';
 
     public string $endDate = '';
+
+    public ?int $scheduleClassroomId = null;
 
     public function mount(): void
     {
@@ -64,7 +67,7 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
         $this->validate([
             'gradeId' => 'required|exists:grades,id',
             'section' => 'required|string|max:1|regex:/^[a-zA-Z]$/',
-            'shift' => 'required|in:matutino,vespertino,nocturno',
+            'shift' => 'required|in:matutino,vespertino',
             'capacity' => 'required|integer|min:1|max:60',
         ], [
             'section.regex' => 'La sección debe ser una sola letra (A-Z).',
@@ -169,6 +172,37 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
         Flux::modal('create-year')->close();
         Flux::toast(variant: 'success', text: "Año escolar {$this->newYear} creado y activado.");
     }
+
+    public function viewSchedule(int $classroomId): void
+    {
+        $this->scheduleClassroomId = $classroomId;
+
+        Flux::modal('view-schedule')->show();
+    }
+
+    #[Computed]
+    public function scheduleClassroom(): ?Classroom
+    {
+        if (! $this->scheduleClassroomId) {
+            return null;
+        }
+
+        return Classroom::with('grade.educationLevel')->find($this->scheduleClassroomId);
+    }
+
+    #[Computed]
+    public function scheduleByDay()
+    {
+        if (! $this->scheduleClassroomId) {
+            return collect();
+        }
+
+        return \App\Models\ClassSchedule::where('classroom_id', $this->scheduleClassroomId)
+            ->with('subjectAssignment.subject', 'subjectAssignment.teacher')
+            ->orderBy('start_time')
+            ->get()
+            ->groupBy('day_of_week');
+    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
@@ -239,9 +273,7 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
                     <flux:table.column>Turno</flux:table.column>
                     <flux:table.column>Capacidad</flux:table.column>
                     <flux:table.column>Matriculados</flux:table.column>
-                    @can('academic.manage')
-                        <flux:table.column></flux:table.column>
-                    @endcan
+                    <flux:table.column></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($this->activeYear->classrooms->sortBy(fn($c) => $c->grade->order) as $classroom)
@@ -251,22 +283,32 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
                             <flux:table.cell>
                                 <flux:badge size="sm" color="zinc">{{ $classroom->grade->educationLevel->name }}</flux:badge>
                             </flux:table.cell>
-                            <flux:table.cell class="capitalize">{{ $classroom->shift }}</flux:table.cell>
+                            <flux:table.cell>{{ Shift::from($classroom->shift)->labelWithTime() }}</flux:table.cell>
                             <flux:table.cell>{{ $classroom->capacity }}</flux:table.cell>
                             <flux:table.cell>
                                 {{ $classroom->enrollments->where('status', 'activo')->count() }} / {{ $classroom->capacity }}
                             </flux:table.cell>
-                            @can('academic.manage')
-                                <flux:table.cell>
+                            <flux:table.cell>
+                                <div class="flex gap-2">
                                     <flux:button
-                                        icon="trash"
+                                        icon="calendar-days"
                                         size="sm"
                                         variant="ghost"
-                                        wire:click="deleteClassroom({{ $classroom->id }})"
-                                        wire:confirm="¿Eliminar este aula?"
-                                    />
-                                </flux:table.cell>
-                            @endcan
+                                        wire:click="viewSchedule({{ $classroom->id }})"
+                                    >
+                                        Horario
+                                    </flux:button>
+                                    @can('academic.manage')
+                                        <flux:button
+                                            icon="trash"
+                                            size="sm"
+                                            variant="ghost"
+                                            wire:click="deleteClassroom({{ $classroom->id }})"
+                                            wire:confirm="¿Eliminar este aula?"
+                                        />
+                                    @endcan
+                                </div>
+                            </flux:table.cell>
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>
@@ -304,9 +346,9 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
                 @error('section') <flux:error>{{ $message }}</flux:error> @enderror
 
                 <flux:select wire:model="shift" label="Turno">
-                    <flux:select.option value="matutino">Matutino</flux:select.option>
-                    <flux:select.option value="vespertino">Vespertino</flux:select.option>
-                    <flux:select.option value="nocturno">Nocturno</flux:select.option>
+                    @foreach (Shift::cases() as $shiftOption)
+                        <flux:select.option value="{{ $shiftOption->value }}">{{ $shiftOption->labelWithTime() }}</flux:select.option>
+                    @endforeach
                 </flux:select>
             </div>
 
@@ -367,6 +409,68 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
                 <flux:button variant="ghost">Cancelar</flux:button>
             </flux:modal.close>
             <flux:button variant="primary" wire:click="createYear">Crear y activar</flux:button>
+        </div>
+    </flux:modal>
+
+    {{-- Modal: Horario semanal --}}
+    <flux:modal name="view-schedule" class="max-w-3xl">
+        @if ($this->scheduleClassroom)
+            <flux:heading size="lg" class="mb-1">
+                Horario — {{ $this->scheduleClassroom->grade->name }}-{{ $this->scheduleClassroom->section }}
+            </flux:heading>
+            <flux:subheading class="mb-4">
+                {{ Shift::from($this->scheduleClassroom->shift)->labelWithTime() }}
+            </flux:subheading>
+
+            @if ($this->scheduleByDay->isEmpty())
+                <flux:text class="text-zinc-500">Esta aula todavía no tiene un horario generado.</flux:text>
+            @else
+                @php
+                    $dayNames = [1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes'];
+                    $timeSlots = $this->scheduleByDay->flatten(1)->unique(fn ($s) => $s->start_time->format('H:i'))->sortBy('start_time');
+                @endphp
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="text-left text-zinc-500 font-medium p-2 border-b border-zinc-200 dark:border-zinc-700">Hora</th>
+                                @foreach ($dayNames as $dayName)
+                                    <th class="text-left text-zinc-500 font-medium p-2 border-b border-zinc-200 dark:border-zinc-700">{{ $dayName }}</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($timeSlots as $slot)
+                                <tr>
+                                    <td class="p-2 border-b border-zinc-100 dark:border-zinc-800 text-zinc-500 whitespace-nowrap">
+                                        {{ $slot->start_time->format('H:i') }}–{{ $slot->end_time->format('H:i') }}
+                                    </td>
+                                    @foreach (array_keys($dayNames) as $day)
+                                        @php
+                                            $entry = ($this->scheduleByDay->get($day) ?? collect())
+                                                ->first(fn ($s) => $s->start_time->format('H:i') === $slot->start_time->format('H:i'));
+                                        @endphp
+                                        <td class="p-2 border-b border-zinc-100 dark:border-zinc-800">
+                                            @if ($entry)
+                                                <div class="font-medium">{{ $entry->subjectAssignment->subject->name }}</div>
+                                                <div class="text-xs text-zinc-400">{{ $entry->subjectAssignment->teacher->full_name }}</div>
+                                            @else
+                                                <span class="text-zinc-300 dark:text-zinc-600">—</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        @endif
+
+        <div class="mt-6 flex justify-end">
+            <flux:modal.close>
+                <flux:button variant="ghost">Cerrar</flux:button>
+            </flux:modal.close>
         </div>
     </flux:modal>
 
