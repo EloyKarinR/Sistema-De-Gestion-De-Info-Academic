@@ -1,0 +1,171 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Enrollment;
+use App\Models\Student;
+use App\Models\SubjectAssignment;
+use App\Models\Teacher;
+use App\Models\User;
+use Database\Seeders\RoleSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
+use Tests\Concerns\SigaTestHelpers;
+use Tests\TestCase;
+
+class TeacherManagementTest extends TestCase
+{
+    use RefreshDatabase, SigaTestHelpers;
+
+    public function test_admin_puede_crear_un_docente_con_su_cuenta_de_acceso(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $admin = $this->makeStaffUser('admin', $team);
+
+        Livewire::actingAs($admin)
+            ->test('pages::teachers.index')
+            ->set('firstName', 'Carlos')
+            ->set('lastName', 'Mendoza')
+            ->set('cedula', '9-999-9999')
+            ->set('email', 'carlos.mendoza@siga.pa')
+            ->set('password', 'password123')
+            ->call('createTeacher')
+            ->assertHasNoErrors();
+
+        $user = User::where('email', 'carlos.mendoza@siga.pa')->first();
+
+        $this->assertNotNull($user);
+        $this->assertTrue($user->hasRole('docente'));
+        $this->assertNotNull($user->teacher);
+        $this->assertSame('9-999-9999', $user->teacher->cedula);
+        $this->assertTrue($user->belongsToTeam($team));
+    }
+
+    public function test_docente_no_puede_crear_otro_docente(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $docente = $this->makeStaffUser('docente', $team);
+
+        Livewire::actingAs($docente)
+            ->test('pages::teachers.index')
+            ->set('firstName', 'X')
+            ->set('lastName', 'Y')
+            ->set('cedula', '1-111-1111')
+            ->set('email', 'nope@siga.pa')
+            ->set('password', 'password123')
+            ->call('createTeacher')
+            ->assertForbidden();
+    }
+
+    public function test_docente_solo_ve_y_guarda_notas_de_su_asignacion(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $admin = $this->makeStaffUser('admin', $team);
+
+        $institution = $this->makeInstitution();
+        $grade = $this->makeGrade($institution);
+        $year = $this->makeActiveYear($institution);
+        $matematica = $institution->subjects()->create(['name' => 'Matemática']);
+        $espanol = $institution->subjects()->create(['name' => 'Español']);
+        $grade->subjects()->attach([$matematica->id, $espanol->id]);
+
+        $classroomA = $this->makeClassroom($grade, $year, 'A');
+        $classroomB = $this->makeClassroom($grade, $year, 'B');
+
+        $student = Student::create(['first_name' => 'Ana', 'last_name' => 'Pérez', 'birth_date' => '2018-01-01', 'sex' => 'F', 'address' => 'Calle 2']);
+        $enrollment = Enrollment::create([
+            'student_id' => $student->id, 'classroom_id' => $classroomA->id, 'academic_year_id' => $year->id,
+            'registered_by' => $admin->id, 'enrollment_date' => '2026-02-01', 'status' => 'activo', 'enrollment_type' => 'nuevo_ingreso',
+        ]);
+        $period = $year->periods()->first();
+
+        $docenteUser = $this->makeStaffUser('docente', $team);
+        $teacher = Teacher::create(['user_id' => $docenteUser->id, 'cedula' => '8-000-0000', 'first_name' => 'Carlos', 'last_name' => 'Mendoza']);
+
+        SubjectAssignment::create([
+            'teacher_id' => $teacher->id, 'classroom_id' => $classroomA->id,
+            'subject_id' => $matematica->id, 'academic_year_id' => $year->id,
+        ]);
+
+        // Puede guardar en su aula+materia asignada
+        Livewire::actingAs($docenteUser)
+            ->test('pages::scores.index')
+            ->set('classroomId', (string) $classroomA->id)
+            ->set('subjectId', (string) $matematica->id)
+            ->set('periodId', (string) $period->id)
+            ->set("scores.{$enrollment->id}", '88')
+            ->call('saveScores')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('grade_scores', [
+            'enrollment_id' => $enrollment->id, 'subject_id' => $matematica->id, 'score' => 88,
+        ]);
+
+        // No puede guardar Español (no asignado) en la misma aula
+        Livewire::actingAs($docenteUser)
+            ->test('pages::scores.index')
+            ->set('classroomId', (string) $classroomA->id)
+            ->set('subjectId', (string) $espanol->id)
+            ->set('periodId', (string) $period->id)
+            ->set("scores.{$enrollment->id}", '70')
+            ->call('saveScores')
+            ->assertForbidden();
+
+        // No puede guardar Matemática en el aula B (no asignado ahí)
+        Livewire::actingAs($docenteUser)
+            ->test('pages::scores.index')
+            ->set('classroomId', (string) $classroomB->id)
+            ->set('subjectId', (string) $matematica->id)
+            ->set('periodId', (string) $period->id)
+            ->call('saveScores')
+            ->assertForbidden();
+    }
+
+    public function test_docente_puede_tener_asignaciones_en_varias_aulas_y_niveles(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $admin = $this->makeStaffUser('admin', $team);
+
+        $institution = $this->makeInstitution();
+        $year = $this->makeActiveYear($institution);
+
+        $grade3 = $this->makeGrade($institution, '3°', 3);
+        $grade7 = $this->makeGrade($institution, '7°', 7);
+        $ingles = $institution->subjects()->create(['name' => 'Inglés']);
+        $grade3->subjects()->attach($ingles->id);
+        $grade7->subjects()->attach($ingles->id);
+
+        $classroom3A = $this->makeClassroom($grade3, $year, 'A');
+        $classroom3B = $this->makeClassroom($grade3, $year, 'B');
+        $classroom7A = $this->makeClassroom($grade7, $year, 'A');
+
+        $docenteUser = $this->makeStaffUser('docente', $team);
+        $teacher = Teacher::create(['user_id' => $docenteUser->id, 'cedula' => '8-111-1111', 'first_name' => 'Laura', 'last_name' => 'Green']);
+
+        $teachers = Livewire::actingAs($admin)->test('pages::teachers.index');
+
+        foreach ([$classroom3A, $classroom3B, $classroom7A] as $classroom) {
+            $teachers->call('openAssignModal', $teacher->id)
+                ->set('assignClassroomId', (string) $classroom->id)
+                ->set('assignSubjectId', (string) $ingles->id)
+                ->call('addAssignment')
+                ->assertHasNoErrors();
+        }
+
+        $this->assertSame(3, SubjectAssignment::where('teacher_id', $teacher->id)->count());
+
+        Livewire::actingAs($docenteUser)
+            ->test('pages::scores.index')
+            ->assertSee('3°-A')
+            ->assertSee('3°-B')
+            ->assertSee('7°-A');
+    }
+}
