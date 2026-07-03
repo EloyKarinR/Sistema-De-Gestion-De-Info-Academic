@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\AcademicYear;
+use App\Models\Classroom;
 use App\Models\Student;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -8,33 +10,71 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Layout('layouts.app')] #[Title('Estudiantes')] class extends Component {
+new #[Layout('layouts.app')] #[Title('Estudiantes')] class extends Component
+{
     use WithPagination;
 
     #[Url(as: 'q')]
     public string $search = '';
+
+    #[Url(as: 'aula')]
+    public string $classroomId = '';
 
     public function updatedSearch(): void
     {
         $this->resetPage();
     }
 
+    public function updatedClassroomId(): void
+    {
+        $this->resetPage();
+    }
+
+    #[Computed]
+    public function activeYear(): ?AcademicYear
+    {
+        return AcademicYear::where('is_active', true)->first();
+    }
+
+    #[Computed]
+    public function classroomsForFilter()
+    {
+        if (! $this->activeYear) {
+            return collect();
+        }
+
+        return Classroom::where('academic_year_id', $this->activeYear->id)
+            ->with('grade.educationLevel')
+            ->get()
+            ->sortBy(fn ($c) => $c->grade->order);
+    }
+
     #[Computed]
     public function students()
     {
         return Student::query()
+            ->select('students.*')
+            ->leftJoin('enrollments', function ($join) {
+                $join->on('enrollments.student_id', '=', 'students.id')
+                    ->where('enrollments.status', '=', 'activo');
+            })
+            ->leftJoin('classrooms', 'classrooms.id', '=', 'enrollments.classroom_id')
+            ->leftJoin('grades', 'grades.id', '=', 'classrooms.grade_id')
             ->when($this->search, function ($q) {
                 $q->where(function ($q) {
-                    $q->whereRaw('LOWER(first_name) LIKE ?', ['%' . strtolower($this->search) . '%'])
-                      ->orWhereRaw('LOWER(last_name) LIKE ?', ['%' . strtolower($this->search) . '%'])
-                      ->orWhere('cedula', 'LIKE', '%' . $this->search . '%');
+                    $q->whereRaw('LOWER(students.first_name) LIKE ?', ['%'.strtolower($this->search).'%'])
+                        ->orWhereRaw('LOWER(students.last_name) LIKE ?', ['%'.strtolower($this->search).'%'])
+                        ->orWhere('students.cedula', 'LIKE', '%'.$this->search.'%');
                 });
             })
+            ->when($this->classroomId, fn ($q) => $q->where('enrollments.classroom_id', $this->classroomId))
             ->with([
                 'activeEnrollment.classroom.grade',
                 'guardians' => fn ($q) => $q->wherePivot('is_primary', true),
             ])
-            ->orderBy('last_name')
+            ->orderByRaw('grades."order" asc nulls last')
+            ->orderBy('classrooms.section')
+            ->orderBy('students.last_name')
             ->paginate(15);
     }
 }; ?>
@@ -49,13 +89,24 @@ new #[Layout('layouts.app')] #[Title('Estudiantes')] class extends Component {
         </div>
     </div>
 
-    {{-- Búsqueda --}}
-    <flux:input
-        wire:model.live.debounce.300ms="search"
-        placeholder="Buscar por nombre o cédula..."
-        icon="magnifying-glass"
-        class="max-w-sm"
-    />
+    {{-- Búsqueda y filtro --}}
+    <div class="flex flex-wrap items-end gap-3">
+        <flux:input
+            wire:model.live.debounce.300ms="search"
+            placeholder="Buscar por nombre o cédula..."
+            icon="magnifying-glass"
+            class="max-w-sm"
+        />
+
+        <flux:select wire:model.live="classroomId" placeholder="Todas las aulas" class="max-w-xs">
+            <flux:select.option value="">Todas las aulas</flux:select.option>
+            @foreach ($this->classroomsForFilter as $classroom)
+                <flux:select.option value="{{ $classroom->id }}">
+                    {{ $classroom->grade->name }}-{{ $classroom->section }} ({{ $classroom->grade->educationLevel->name }})
+                </flux:select.option>
+            @endforeach
+        </flux:select>
+    </div>
 
     {{-- Tabla --}}
     @if ($this->students->count())
