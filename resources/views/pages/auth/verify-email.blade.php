@@ -1,12 +1,12 @@
-<x-layouts::auth :title="__('Email verification')">
+<x-layouts::auth title="Verificación de correo">
     <div class="mt-4 flex flex-col gap-6">
         <flux:text class="text-center">
-            {{ __('Please verify your email address by clicking on the link we just emailed to you.') }}
+            Verifica tu correo electrónico haciendo clic en el enlace que te acabamos de enviar.
         </flux:text>
 
         @if (session('status') == 'verification-link-sent')
             <flux:text class="text-center font-medium !dark:text-green-400 !text-green-600">
-                {{ __('A new verification link has been sent to the email address you provided during registration.') }}
+                Se envió un nuevo enlace de verificación al correo que registraste.
             </flux:text>
         @endif
 
@@ -14,14 +14,14 @@
             <form method="POST" action="{{ route('verification.send') }}">
                 @csrf
                 <flux:button type="submit" variant="primary" class="w-full">
-                    {{ __('Resend verification email') }}
+                    Reenviar correo de verificación
                 </flux:button>
             </form>
 
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <flux:button variant="ghost" type="submit" class="text-sm cursor-pointer" data-test="logout-button">
-                    {{ __('Log out') }}
+                    Cerrar sesión
                 </flux:button>
             </form>
         </div>

@@ -144,7 +144,8 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Registration deshabilitado a propósito: las cuentas en SIGA siempre
+        // las crea un admin o secretaria desde el sistema, no hay auto-registro.
         Features::resetPasswords(),
         Features::emailVerification(),
         Features::twoFactorAuthentication([
