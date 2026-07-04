@@ -216,6 +216,21 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
             ->get()
             ->groupBy('day_of_week');
     }
+
+    /**
+     * Fill/track classes for a capacity meter, keyed by severity so both
+     * halves of the bar shift hue together (blue-on-blue, amber-on-amber…).
+     */
+    public function meterClasses(int $enrolled, int $capacity): array
+    {
+        $percentage = $capacity > 0 ? $enrolled / $capacity : 0;
+
+        return match (true) {
+            $percentage >= 0.9 => ['fill' => 'bg-red-500', 'track' => 'bg-red-100 dark:bg-red-950/50'],
+            $percentage >= 0.7 => ['fill' => 'bg-amber-500', 'track' => 'bg-amber-100 dark:bg-amber-950/50'],
+            default => ['fill' => 'bg-blue-500', 'track' => 'bg-blue-100 dark:bg-blue-950/50'],
+        };
+    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
@@ -231,7 +246,12 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
     {{-- Año Escolar Activo --}}
     <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-4">
         <div class="flex items-center justify-between">
-            <flux:heading size="lg">Año Escolar Activo</flux:heading>
+            <div class="flex items-center gap-3">
+                <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                    <flux:icon name="calendar" class="size-5" />
+                </div>
+                <flux:heading size="lg">Año Escolar Activo</flux:heading>
+            </div>
             @can('academic.manage')
                 <flux:modal.trigger name="create-year">
                     <flux:button icon="plus" size="sm">Nuevo año</flux:button>
@@ -267,7 +287,12 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
     {{-- Aulas --}}
     <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-4">
         <div class="flex items-center justify-between">
-            <flux:heading size="lg">Aulas</flux:heading>
+            <div class="flex items-center gap-3">
+                <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400">
+                    <flux:icon name="building-office-2" class="size-5" />
+                </div>
+                <flux:heading size="lg">Aulas</flux:heading>
+            </div>
             @can('academic.manage')
                 @if ($this->activeYear)
                     <flux:modal.trigger name="add-classroom">
@@ -305,7 +330,17 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
                                         </flux:table.cell>
                                         <flux:table.cell>{{ $classroom->capacity }}</flux:table.cell>
                                         <flux:table.cell>
-                                            {{ $classroom->enrollments->where('status', 'activo')->count() }} / {{ $classroom->capacity }}
+                                            @php
+                                                $enrolledCount = $classroom->enrollments->where('status', 'activo')->count();
+                                                $percentage = $classroom->capacity > 0 ? min(100, round($enrolledCount / $classroom->capacity * 100)) : 0;
+                                                $meter = $this->meterClasses($enrolledCount, $classroom->capacity);
+                                            @endphp
+                                            <div class="flex items-center gap-2 min-w-[100px]">
+                                                <div class="h-2 flex-1 rounded-full {{ $meter['track'] }} overflow-hidden">
+                                                    <div class="h-full rounded-full {{ $meter['fill'] }}" style="width: {{ $percentage }}%"></div>
+                                                </div>
+                                                <span class="text-xs text-zinc-500 tabular-nums shrink-0">{{ $enrolledCount }}/{{ $classroom->capacity }}</span>
+                                            </div>
                                         </flux:table.cell>
                                         <flux:table.cell>
                                             <div class="flex gap-2">
@@ -440,9 +475,10 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
             <flux:heading size="lg" class="mb-1">
                 Horario — {{ $this->scheduleClassroom->grade->name }}-{{ $this->scheduleClassroom->section }}
             </flux:heading>
-            <flux:subheading class="mb-4">
-                {{ Shift::from($this->scheduleClassroom->shift)->labelWithTime() }}
-            </flux:subheading>
+            @php $scheduleShift = Shift::from($this->scheduleClassroom->shift); @endphp
+            <flux:badge size="sm" :color="$scheduleShift->color()" :icon="$scheduleShift->icon()" class="mb-4">
+                {{ $scheduleShift->labelWithTime() }}
+            </flux:badge>
 
             @if ($this->scheduleByDay->isEmpty())
                 <flux:text class="text-zinc-500">Esta aula todavía no tiene un horario generado.</flux:text>
