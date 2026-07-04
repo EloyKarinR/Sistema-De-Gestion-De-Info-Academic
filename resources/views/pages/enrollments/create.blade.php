@@ -415,11 +415,11 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
                             <flux:icon name="check-circle" class="size-4" />
                             Estudiante encontrado
                         </div>
+                        <div class="flex items-center gap-3">
+                            <x-avatar-initials :initials="$this->foundStudent->initials" />
+                            <span class="font-medium">{{ $this->foundStudent->full_name }}</span>
+                        </div>
                         <dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
-                            <div class="flex justify-between">
-                                <dt class="text-zinc-500">Nombre</dt>
-                                <dd class="font-medium">{{ $this->foundStudent->full_name }}</dd>
-                            </div>
                             <div class="flex justify-between">
                                 <dt class="text-zinc-500">Cédula</dt>
                                 <dd>{{ $this->foundStudent->cedula ?? '—' }}</dd>
@@ -496,11 +496,11 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
                                 <flux:icon name="check-circle" class="size-4" />
                                 Acudiente registrado
                             </div>
+                            <div class="flex items-center gap-3">
+                                <x-avatar-initials :initials="$existingGuardian->initials" />
+                                <span class="font-medium">{{ $existingGuardian->full_name }}</span>
+                            </div>
                             <dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
-                                <div class="flex justify-between">
-                                    <dt class="text-zinc-500">Nombre</dt>
-                                    <dd class="font-medium">{{ $existingGuardian->full_name }}</dd>
-                                </div>
                                 <div class="flex justify-between">
                                     <dt class="text-zinc-500">Parentesco</dt>
                                     <dd class="capitalize">{{ $existingGuardian->relationship }}</dd>
@@ -666,11 +666,15 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
                     </div>
 
                     <div class="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
-                        <div class="col-span-2 font-medium text-zinc-700 dark:text-zinc-300 mb-1">Estudiante</div>
+                        <div class="col-span-2 flex items-center gap-2 mb-1">
+                            <x-avatar-initials :initials="$r->student->initials" size="size-7" />
+                            <span class="font-medium text-zinc-700 dark:text-zinc-300">Estudiante</span>
+                        </div>
                         <div class="flex justify-between"><span class="text-zinc-500">Nombre</span><span class="font-medium">{{ $r->student->full_name }}</span></div>
                         <div class="flex justify-between"><span class="text-zinc-500">Cédula</span><span>{{ $r->student->cedula ?? '—' }}</span></div>
                         <div class="flex justify-between"><span class="text-zinc-500">Aula</span><span>{{ $r->classroom->grade->name }}-{{ $r->classroom->section }}</span></div>
-                        <div class="flex justify-between"><span class="text-zinc-500">Turno</span><span>{{ Shift::from($r->classroom->shift)->labelWithTime() }}</span></div>
+                        @php $receiptShift = Shift::from($r->classroom->shift); @endphp
+                        <div class="flex justify-between items-center"><span class="text-zinc-500">Turno</span><flux:badge size="sm" :color="$receiptShift->color()" :icon="$receiptShift->icon()">{{ $receiptShift->labelWithTime() }}</flux:badge></div>
                         <div class="flex justify-between"><span class="text-zinc-500">Tipo</span><span class="capitalize">{{ str_replace('_', ' ', $r->enrollment_type) }}</span></div>
                         <div class="flex justify-between"><span class="text-zinc-500">Fecha</span><span>{{ $r->enrollment_date->format('d/m/Y') }}</span></div>
                     </div>
