@@ -53,9 +53,11 @@ class RoleSeeder extends Seeder
             Permission::firstOrCreate(['name' => $permission]);
         }
 
-        // Admin — acceso total
+        // Admin — acceso total a la administración del sistema.
+        // portal.view queda excluido: es exclusivo del rol acudiente
+        // (ver "Mi Portal" de un estudiante no es una función administrativa).
         $admin = Role::firstOrCreate(['name' => 'admin']);
-        $admin->givePermissionTo(Permission::all());
+        $admin->syncPermissions(Permission::where('name', '!=', 'portal.view')->get());
 
         // Secretaria
         $secretaria = Role::firstOrCreate(['name' => 'secretaria']);

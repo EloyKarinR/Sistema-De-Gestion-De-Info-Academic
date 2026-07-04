@@ -72,7 +72,7 @@ class PermissionsTest extends TestCase
             'teachers.index' => ['admin' => 200, 'secretaria' => 200, 'docente' => 403, 'acudiente' => 403],
             'guardians.index' => ['admin' => 200, 'secretaria' => 200, 'docente' => 403, 'acudiente' => 403],
             'scores.index' => ['admin' => 200, 'secretaria' => 200, 'docente' => 200, 'acudiente' => 403],
-            'portal.index' => ['admin' => 200, 'secretaria' => 403, 'docente' => 403, 'acudiente' => 200],
+            'portal.index' => ['admin' => 403, 'secretaria' => 403, 'docente' => 403, 'acudiente' => 200],
             'enrollments.index' => ['admin' => 200, 'secretaria' => 200, 'docente' => 403, 'acudiente' => 403],
             'enrollments.create' => ['admin' => 200, 'secretaria' => 200, 'docente' => 403, 'acudiente' => 403],
             'reports.index' => ['admin' => 200, 'secretaria' => 200, 'docente' => 200, 'acudiente' => 403],

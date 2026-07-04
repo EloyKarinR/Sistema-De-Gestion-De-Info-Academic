@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Shift;
+use App\Models\ClassSchedule;
 use App\Models\Enrollment;
 use App\Models\GradeScore;
 use Illuminate\Support\Facades\Auth;
@@ -84,7 +85,7 @@ new #[Layout('layouts.app')] #[Title('Mi Portal')] class extends Component
             return collect();
         }
 
-        return \App\Models\ClassSchedule::where('classroom_id', $enrollment->classroom_id)
+        return ClassSchedule::where('classroom_id', $enrollment->classroom_id)
             ->with('subjectAssignment.subject', 'subjectAssignment.teacher')
             ->orderBy('start_time')
             ->get()
@@ -95,9 +96,14 @@ new #[Layout('layouts.app')] #[Title('Mi Portal')] class extends Component
 <div class="flex h-full w-full flex-1 flex-col gap-6">
 
     {{-- Encabezado --}}
-    <div>
-        <flux:heading size="xl">Mi Portal</flux:heading>
-        <flux:subheading>Información académica de tu(s) hijo(s)</flux:subheading>
+    <div class="flex items-center gap-3">
+        @if ($this->selectedStudent)
+            <x-avatar-initials :initials="$this->selectedStudent->initials" size="size-11" />
+        @endif
+        <div>
+            <flux:heading size="xl">Mi Portal</flux:heading>
+            <flux:subheading>Información académica de tu(s) hijo(s)</flux:subheading>
+        </div>
     </div>
 
     @if ($this->children->isEmpty())
@@ -146,9 +152,14 @@ new #[Layout('layouts.app')] #[Title('Mi Portal')] class extends Component
                                 <dt class="text-zinc-500">Nivel</dt>
                                 <dd>{{ $enrollment->classroom->grade->educationLevel->name }}</dd>
                             </div>
-                            <div class="flex justify-between">
+                            <div class="flex justify-between items-center">
                                 <dt class="text-zinc-500">Turno</dt>
-                                <dd>{{ Shift::from($enrollment->classroom->shift)->labelWithTime() }}</dd>
+                                <dd>
+                                    @php $portalShift = Shift::from($enrollment->classroom->shift); @endphp
+                                    <flux:badge size="sm" :color="$portalShift->color()" :icon="$portalShift->icon()">
+                                        {{ $portalShift->labelWithTime() }}
+                                    </flux:badge>
+                                </dd>
                             </div>
                             <div class="flex justify-between">
                                 <dt class="text-zinc-500">Año escolar</dt>
@@ -160,9 +171,10 @@ new #[Layout('layouts.app')] #[Title('Mi Portal')] class extends Component
                     <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-3">
                         <flux:heading size="lg">Compañeros de aula</flux:heading>
                         @forelse ($this->classmates as $classmate)
-                            <flux:text class="block text-sm {{ ! $loop->last ? 'mb-1' : '' }}">
-                                {{ $classmate->full_name }}
-                            </flux:text>
+                            <div class="flex items-center gap-2 {{ ! $loop->last ? 'mb-2' : '' }}">
+                                <x-avatar-initials :initials="$classmate->initials" size="size-7" />
+                                <span class="text-sm">{{ $classmate->full_name }}</span>
+                            </div>
                         @empty
                             <flux:text class="text-sm text-zinc-400">Sin otros compañeros registrados.</flux:text>
                         @endforelse
