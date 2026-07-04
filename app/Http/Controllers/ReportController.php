@@ -9,6 +9,7 @@ use App\Models\Institution;
 use App\Models\Student;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 
 class ReportController extends Controller
 {
@@ -26,8 +27,11 @@ class ReportController extends Controller
             }
         }
 
+        $institution = Institution::first();
+
         return Pdf::loadView('pdf.boletin', [
-            'institution' => Institution::first(),
+            'institution' => $institution,
+            'logoPath' => $this->logoPath($institution),
             'student' => $student,
             'enrollment' => $enrollment,
             'matrix' => $matrix,
@@ -43,8 +47,11 @@ class ReportController extends Controller
             'registeredBy',
         ]);
 
+        $institution = Institution::first();
+
         return Pdf::loadView('pdf.constancia', [
-            'institution' => Institution::first(),
+            'institution' => $institution,
+            'logoPath' => $this->logoPath($institution),
             'enrollment' => $enrollment,
         ])->stream("constancia-{$enrollment->id}.pdf");
     }
@@ -59,10 +66,25 @@ class ReportController extends Controller
             ->get()
             ->sortBy(fn ($e) => $e->student->last_name);
 
+        $institution = Institution::first();
+
         return Pdf::loadView('pdf.listado', [
-            'institution' => Institution::first(),
+            'institution' => $institution,
+            'logoPath' => $this->logoPath($institution),
             'classroom' => $classroom,
             'enrollments' => $enrollments,
         ])->stream("listado-{$classroom->id}.pdf");
+    }
+
+    /**
+     * DomPDF needs a real filesystem path (not a storage URL) to embed images.
+     */
+    private function logoPath(?Institution $institution): ?string
+    {
+        if (! $institution?->logo || ! Storage::disk('public')->exists($institution->logo)) {
+            return null;
+        }
+
+        return Storage::disk('public')->path($institution->logo);
     }
 }

@@ -76,8 +76,15 @@ new #[Layout('layouts.app')] #[Title('Reportes')] class extends Component
 
     {{-- Boletín y Constancia --}}
     <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-4">
-        <flux:heading size="lg">Boletín de notas / Constancia de matrícula</flux:heading>
-        <flux:subheading>Busca un estudiante para descargar sus documentos.</flux:subheading>
+        <div class="flex items-center gap-3">
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                <flux:icon name="document-text" class="size-5" />
+            </div>
+            <div>
+                <flux:heading size="lg" class="leading-tight">Boletín de notas / Constancia de matrícula</flux:heading>
+                <flux:text class="text-zinc-500 text-sm">Busca un estudiante para descargar sus documentos</flux:text>
+            </div>
+        </div>
 
         <flux:input
             wire:model.live.debounce.300ms="studentSearch"
@@ -98,7 +105,12 @@ new #[Layout('layouts.app')] #[Title('Reportes')] class extends Component
                     <flux:table.rows>
                         @foreach ($this->students as $student)
                             <flux:table.row>
-                                <flux:table.cell class="font-medium">{{ $student->full_name }}</flux:table.cell>
+                                <flux:table.cell>
+                                    <div class="flex items-center gap-3">
+                                        <x-avatar-initials :initials="$student->initials" />
+                                        <span class="font-medium">{{ $student->full_name }}</span>
+                                    </div>
+                                </flux:table.cell>
                                 <flux:table.cell class="text-zinc-500">{{ $student->cedula ?? '—' }}</flux:table.cell>
                                 <flux:table.cell>
                                     @if ($student->activeEnrollment)
@@ -145,8 +157,15 @@ new #[Layout('layouts.app')] #[Title('Reportes')] class extends Component
 
     {{-- Listado por aula --}}
     <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-4">
-        <flux:heading size="lg">Listado de estudiantes por aula</flux:heading>
-        <flux:subheading>Para pegar en la puerta del salón o control de secretaría.</flux:subheading>
+        <div class="flex items-center gap-3">
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400">
+                <flux:icon name="printer" class="size-5" />
+            </div>
+            <div>
+                <flux:heading size="lg" class="leading-tight">Listado de estudiantes por aula</flux:heading>
+                <flux:text class="text-zinc-500 text-sm">Para pegar en la puerta del salón o control de secretaría</flux:text>
+            </div>
+        </div>
 
         @if (! $this->activeYear)
             <flux:text class="text-zinc-500">No hay un año escolar activo.</flux:text>

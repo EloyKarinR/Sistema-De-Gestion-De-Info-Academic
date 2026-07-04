@@ -5,6 +5,7 @@
     <style>
         body { font-family: Helvetica, Arial, sans-serif; font-size: 12px; color: #222; }
         .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .header img { height: 50px; margin-bottom: 6px; }
         .header h1 { font-size: 18px; margin: 0 0 4px; }
         .header h2 { font-size: 14px; margin: 0; font-weight: normal; color: #555; }
         .receipt-number { text-align: right; font-size: 11px; color: #666; margin-bottom: 10px; }
@@ -21,6 +22,9 @@
 </head>
 <body>
     <div class="header">
+        @if ($logoPath)
+            <img src="{{ $logoPath }}" alt="Logo">
+        @endif
         <h1>{{ $institution->name ?? 'Institución Educativa' }}</h1>
         <h2>Constancia de Matrícula</h2>
     </div>
