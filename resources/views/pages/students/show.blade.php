@@ -160,6 +160,7 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
             :href="route('students.index')"
             wire:navigate
         />
+        <x-avatar-initials :initials="$student->initials" size="size-14" text="text-lg" />
         <div>
             <flux:heading size="xl">{{ $student->full_name }}</flux:heading>
             <flux:subheading>Ficha del estudiante</flux:subheading>
@@ -226,7 +227,10 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
                 @forelse ($student->guardians as $guardian)
                     <div class="space-y-2 {{ ! $loop->last ? 'pb-4 border-b border-zinc-100 dark:border-zinc-700' : '' }}">
                         <div class="flex items-center justify-between">
-                            <span class="font-medium text-sm">{{ $guardian->full_name }}</span>
+                            <div class="flex items-center gap-2">
+                                <x-avatar-initials :initials="$guardian->initials" />
+                                <span class="font-medium text-sm">{{ $guardian->full_name }}</span>
+                            </div>
                             @if ($guardian->pivot->is_primary)
                                 <flux:badge size="sm" color="blue">Principal</flux:badge>
                             @endif
@@ -333,7 +337,12 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
                             </div>
                             <div class="flex justify-between col-span-1">
                                 <dt class="text-zinc-500">Turno</dt>
-                                <dd>{{ Shift::from($enrollment->classroom->shift)->labelWithTime() }}</dd>
+                                <dd>
+                                    @php $enrollmentShift = Shift::from($enrollment->classroom->shift); @endphp
+                                    <flux:badge size="sm" :color="$enrollmentShift->color()" :icon="$enrollmentShift->icon()">
+                                        {{ $enrollmentShift->labelWithTime() }}
+                                    </flux:badge>
+                                </dd>
                             </div>
                             <div class="flex justify-between col-span-1">
                                 <dt class="text-zinc-500">Registrado por</dt>
