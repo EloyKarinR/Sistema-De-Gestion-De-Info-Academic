@@ -139,8 +139,11 @@ new #[Layout('layouts.app')] #[Title('Estudiantes')] class extends Component
             <flux:table.rows>
                 @foreach ($this->students as $student)
                     <flux:table.row>
-                        <flux:table.cell class="font-medium">
-                            {{ $student->full_name }}
+                        <flux:table.cell>
+                            <div class="flex items-center gap-3">
+                                <x-avatar-initials :initials="$student->initials" />
+                                <span class="font-medium">{{ $student->full_name }}</span>
+                            </div>
                         </flux:table.cell>
                         <flux:table.cell class="text-zinc-500">
                             {{ $student->cedula ?? '—' }}

@@ -194,8 +194,11 @@ new #[Layout('layouts.app')] #[Title('Acudientes')] class extends Component
             <flux:table.rows>
                 @foreach ($this->guardians as $guardian)
                     <flux:table.row>
-                        <flux:table.cell class="font-medium">
-                            {{ $guardian->full_name }}
+                        <flux:table.cell>
+                            <div class="flex items-center gap-3">
+                                <x-avatar-initials :initials="$guardian->initials" />
+                                <span class="font-medium">{{ $guardian->full_name }}</span>
+                            </div>
                         </flux:table.cell>
                         <flux:table.cell class="text-zinc-500">
                             {{ $guardian->cedula ?? '—' }}

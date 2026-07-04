@@ -350,15 +350,19 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
             <flux:table.rows>
                 @foreach ($this->teachers as $teacher)
                     <flux:table.row>
-                        <flux:table.cell class="font-medium">
-                            {{ $teacher->full_name }}
+                        <flux:table.cell>
+                            <div class="flex items-center gap-3">
+                                <x-avatar-initials :initials="$teacher->initials" />
+                                <span class="font-medium">{{ $teacher->full_name }}</span>
+                            </div>
                         </flux:table.cell>
                         <flux:table.cell class="text-zinc-500">
                             {{ $teacher->cedula }}
                         </flux:table.cell>
                         <flux:table.cell>
                             @if ($teacher->shift)
-                                <flux:badge size="sm" color="zinc">{{ Shift::from($teacher->shift)->label() }}</flux:badge>
+                                @php $shiftEnum = Shift::from($teacher->shift); @endphp
+                                <flux:badge size="sm" :color="$shiftEnum->color()" :icon="$shiftEnum->icon()">{{ $shiftEnum->label() }}</flux:badge>
                             @else
                                 <span class="text-zinc-400">—</span>
                             @endif

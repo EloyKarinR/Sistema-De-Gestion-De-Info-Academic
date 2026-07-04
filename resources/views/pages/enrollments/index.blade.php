@@ -120,8 +120,11 @@ new #[Layout('layouts.app')] #[Title('Matrículas')] class extends Component
                             $docsCount = $docs->filter()->count();
                         @endphp
                         <flux:table.row>
-                            <flux:table.cell class="font-medium">
-                                {{ $enrollment->student->full_name }}
+                            <flux:table.cell>
+                                <div class="flex items-center gap-3">
+                                    <x-avatar-initials :initials="$enrollment->student->initials" />
+                                    <span class="font-medium">{{ $enrollment->student->full_name }}</span>
+                                </div>
                             </flux:table.cell>
                             <flux:table.cell class="text-zinc-500">
                                 {{ $enrollment->student->cedula ?? '—' }}
@@ -149,9 +152,10 @@ new #[Layout('layouts.app')] #[Title('Matrículas')] class extends Component
                                 </flux:badge>
                             </flux:table.cell>
                             <flux:table.cell>
-                                <span class="{{ $docsCount === 5 ? 'text-green-600' : 'text-yellow-600' }} text-sm font-medium">
+                                <div class="flex items-center gap-1.5 {{ $docsCount === 5 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400' }} text-sm font-medium">
+                                    <flux:icon :icon="$docsCount === 5 ? 'document-check' : 'document-text'" class="size-4" />
                                     {{ $docsCount }}/5
-                                </span>
+                                </div>
                             </flux:table.cell>
                             <flux:table.cell>
                                 <flux:button

@@ -282,7 +282,10 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
                 @foreach (Shift::cases() as $shiftOption)
                     @continue($this->classroomsByShift->get($shiftOption->value, collect())->isEmpty())
                     <div class="space-y-2">
-                        <flux:subheading>Turno {{ $shiftOption->labelWithTime() }}</flux:subheading>
+                        <div class="flex items-center gap-2">
+                            <flux:badge size="sm" :color="$shiftOption->color()" :icon="$shiftOption->icon()">{{ $shiftOption->label() }}</flux:badge>
+                            <flux:subheading>{{ $shiftOption->timeRange() }}</flux:subheading>
+                        </div>
                         <flux:table>
                             <flux:table.columns>
                                 <flux:table.column>Grado</flux:table.column>

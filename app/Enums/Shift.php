@@ -35,6 +35,28 @@ enum Shift: string
     }
 
     /**
+     * Get the badge color associated with the shift.
+     */
+    public function color(): string
+    {
+        return match ($this) {
+            self::Matutino => 'amber',
+            self::Vespertino => 'indigo',
+        };
+    }
+
+    /**
+     * Get the icon associated with the shift.
+     */
+    public function icon(): string
+    {
+        return match ($this) {
+            self::Matutino => 'sun',
+            self::Vespertino => 'moon',
+        };
+    }
+
+    /**
      * Get all shifts as [value => labelWithTime] pairs, for select options.
      *
      * @return array<string, string>

@@ -50,4 +50,9 @@ class Student extends Model
     {
         return $this->birth_date?->age;
     }
+
+    public function getInitialsAttribute(): string
+    {
+        return mb_strtoupper(mb_substr($this->first_name, 0, 1).mb_substr($this->last_name, 0, 1));
+    }
 }

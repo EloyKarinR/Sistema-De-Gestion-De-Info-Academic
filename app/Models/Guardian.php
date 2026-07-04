@@ -27,6 +27,11 @@ class Guardian extends Model
 
     public function getFullNameAttribute(): string
     {
-        return $this->first_name . ' ' . $this->last_name;
+        return $this->first_name.' '.$this->last_name;
+    }
+
+    public function getInitialsAttribute(): string
+    {
+        return mb_strtoupper(mb_substr($this->first_name, 0, 1).mb_substr($this->last_name, 0, 1));
     }
 }
