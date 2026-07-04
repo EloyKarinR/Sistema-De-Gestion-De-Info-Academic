@@ -2,6 +2,7 @@
 
 use App\Models\AcademicYear;
 use App\Models\Enrollment;
+use Flux\Flux;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -16,9 +17,63 @@ new #[Layout('layouts.app')] #[Title('Matrículas')] class extends Component
     #[Url(as: 'q')]
     public string $search = '';
 
+    public ?int $statusEnrollmentId = null;
+
+    public string $newStatus = 'retirado';
+
+    public string $statusDate = '';
+
+    public string $statusReason = '';
+
     public function updatedSearch(): void
     {
         $this->resetPage();
+    }
+
+    public function openStatusModal(int $enrollmentId, string $status): void
+    {
+        $this->authorize('enrollment.edit');
+
+        $this->statusEnrollmentId = $enrollmentId;
+        $this->newStatus = $status;
+        $this->statusDate = now()->format('Y-m-d');
+        $this->statusReason = '';
+
+        Flux::modal('change-status')->show();
+    }
+
+    #[Computed]
+    public function statusEnrollment(): ?Enrollment
+    {
+        return $this->statusEnrollmentId ? Enrollment::with('student')->find($this->statusEnrollmentId) : null;
+    }
+
+    public function updateStatus(): void
+    {
+        $this->authorize('enrollment.edit');
+
+        $this->validate([
+            'statusDate' => 'required|date',
+            'statusReason' => 'nullable|string|max:255',
+        ]);
+
+        $enrollment = Enrollment::findOrFail($this->statusEnrollmentId);
+
+        abort_unless($enrollment->status === 'activo', 403, 'Solo se puede cambiar el estado de una matrícula activa.');
+
+        $enrollment->update([
+            'status' => $this->newStatus,
+            'status_date' => $this->statusDate,
+            'status_reason' => $this->statusReason ?: null,
+        ]);
+
+        Flux::modal('change-status')->close();
+        Flux::toast(
+            variant: 'success',
+            text: $this->newStatus === 'retirado' ? 'Estudiante retirado correctamente.' : 'Estudiante marcado como trasladado.'
+        );
+
+        unset($this->enrollments);
     }
 
     #[Computed]
@@ -150,6 +205,11 @@ new #[Layout('layouts.app')] #[Title('Matrículas')] class extends Component
                                 <flux:badge size="sm" :color="$color" class="capitalize">
                                     {{ $enrollment->status }}
                                 </flux:badge>
+                                @if ($enrollment->status !== 'activo' && $enrollment->status_date)
+                                    <flux:text class="block text-xs text-zinc-400 mt-0.5">
+                                        {{ $enrollment->status_date->format('d/m/Y') }}
+                                    </flux:text>
+                                @endif
                             </flux:table.cell>
                             <flux:table.cell>
                                 <div class="flex items-center gap-1.5 {{ $docsCount === 5 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400' }} text-sm font-medium">
@@ -158,13 +218,36 @@ new #[Layout('layouts.app')] #[Title('Matrículas')] class extends Component
                                 </div>
                             </flux:table.cell>
                             <flux:table.cell>
-                                <flux:button
-                                    size="sm"
-                                    variant="ghost"
-                                    icon="eye"
-                                    :href="route('students.show', $enrollment->student)"
-                                    wire:navigate
-                                />
+                                <div class="flex items-center gap-1">
+                                    <flux:button
+                                        size="sm"
+                                        variant="ghost"
+                                        icon="eye"
+                                        :href="route('students.show', $enrollment->student)"
+                                        wire:navigate
+                                    />
+                                    @can('enrollment.edit')
+                                        @if ($enrollment->status === 'activo')
+                                            <flux:dropdown>
+                                                <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" />
+                                                <flux:menu>
+                                                    <flux:menu.item
+                                                        icon="user-minus"
+                                                        wire:click="openStatusModal({{ $enrollment->id }}, 'retirado')"
+                                                    >
+                                                        Retirar
+                                                    </flux:menu.item>
+                                                    <flux:menu.item
+                                                        icon="arrow-right-circle"
+                                                        wire:click="openStatusModal({{ $enrollment->id }}, 'trasladado')"
+                                                    >
+                                                        Marcar como trasladado
+                                                    </flux:menu.item>
+                                                </flux:menu>
+                                            </flux:dropdown>
+                                        @endif
+                                    @endcan
+                                </div>
                             </flux:table.cell>
                         </flux:table.row>
                     @endforeach
@@ -188,5 +271,32 @@ new #[Layout('layouts.app')] #[Title('Matrículas')] class extends Component
             </div>
         @endif
     @endif
+
+    {{-- Modal: Cambiar estado (retirar / trasladar) --}}
+    <flux:modal name="change-status" class="max-w-md">
+        <flux:heading size="lg" class="mb-1">
+            {{ $newStatus === 'retirado' ? 'Retirar estudiante' : 'Marcar como trasladado' }}
+        </flux:heading>
+        <flux:subheading class="mb-4">
+            {{ $this->statusEnrollment?->student->full_name }}
+        </flux:subheading>
+
+        <div class="space-y-4">
+            <flux:input wire:model="statusDate" label="Fecha" type="date" required />
+            @error('statusDate') <flux:error>{{ $message }}</flux:error> @enderror
+
+            <flux:textarea wire:model="statusReason" label="Motivo (opcional)" placeholder="Se traslada a otro colegio, se muda de ciudad..." rows="2" />
+            @error('statusReason') <flux:error>{{ $message }}</flux:error> @enderror
+        </div>
+
+        <div class="mt-6 flex justify-end gap-2">
+            <flux:modal.close>
+                <flux:button variant="ghost">Cancelar</flux:button>
+            </flux:modal.close>
+            <flux:button variant="primary" wire:click="updateStatus" wire:loading.attr="disabled">
+                Confirmar
+            </flux:button>
+        </div>
+    </flux:modal>
 
 </div>

@@ -371,6 +371,15 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
                             </div>
                         </div>
 
+                        @if ($enrollment->status !== 'activo' && $enrollment->status_date)
+                            <div class="rounded-lg bg-zinc-50 dark:bg-zinc-800 px-3 py-2 text-sm">
+                                <span class="text-zinc-500">{{ ucfirst($enrollment->status) }} el {{ $enrollment->status_date->format('d/m/Y') }}</span>
+                                @if ($enrollment->status_reason)
+                                    <span class="text-zinc-500">— {{ $enrollment->status_reason }}</span>
+                                @endif
+                            </div>
+                        @endif
+
                         @if ($enrollment->notes)
                             <flux:text class="text-sm text-zinc-500">{{ $enrollment->notes }}</flux:text>
                         @endif

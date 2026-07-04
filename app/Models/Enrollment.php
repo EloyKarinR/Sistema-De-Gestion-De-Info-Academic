@@ -10,18 +10,19 @@ class Enrollment extends Model
 {
     protected $fillable = [
         'student_id', 'classroom_id', 'academic_year_id', 'registered_by',
-        'enrollment_date', 'status', 'enrollment_type', 'receipt_number',
+        'enrollment_date', 'status', 'status_date', 'status_reason', 'enrollment_type', 'receipt_number',
         'doc_cedula_student', 'doc_cedula_guardian', 'doc_boletin', 'doc_foto', 'doc_address',
         'notes',
     ];
 
     protected $casts = [
-        'enrollment_date'    => 'date',
+        'enrollment_date' => 'date',
+        'status_date' => 'date',
         'doc_cedula_student' => 'boolean',
-        'doc_cedula_guardian'=> 'boolean',
-        'doc_boletin'        => 'boolean',
-        'doc_foto'           => 'boolean',
-        'doc_address'        => 'boolean',
+        'doc_cedula_guardian' => 'boolean',
+        'doc_boletin' => 'boolean',
+        'doc_foto' => 'boolean',
+        'doc_address' => 'boolean',
     ];
 
     public function student(): BelongsTo
