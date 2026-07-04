@@ -179,26 +179,38 @@ new #[Layout('layouts.app')] #[Title('Notas')] class extends Component
         </div>
     @else
         {{-- Selectores --}}
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-            <flux:select wire:model.live="classroomId" label="Aula" placeholder="Selecciona un aula">
-                @foreach ($this->classrooms as $classroom)
-                    <flux:select.option value="{{ $classroom->id }}">
-                        {{ $classroom->grade->name }}-{{ $classroom->section }} ({{ $classroom->grade->educationLevel->name }})
-                    </flux:select.option>
-                @endforeach
-            </flux:select>
+        <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-4">
+            <div class="flex items-center gap-3">
+                <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                    <flux:icon name="adjustments-horizontal" class="size-5" />
+                </div>
+                <div>
+                    <flux:heading size="lg" class="leading-tight">Selecciona la clase</flux:heading>
+                    <flux:text class="text-zinc-500 text-sm">Elige aula, materia y trimestre para cargar las notas</flux:text>
+                </div>
+            </div>
 
-            <flux:select wire:model.live="subjectId" label="Materia" placeholder="Selecciona una materia" :disabled="! $classroomId">
-                @foreach ($this->subjects as $subject)
-                    <flux:select.option value="{{ $subject->id }}">{{ $subject->name }}</flux:select.option>
-                @endforeach
-            </flux:select>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <flux:select wire:model.live="classroomId" label="Aula" placeholder="Selecciona un aula">
+                    @foreach ($this->classrooms as $classroom)
+                        <flux:select.option value="{{ $classroom->id }}">
+                            {{ $classroom->grade->name }}-{{ $classroom->section }} ({{ $classroom->grade->educationLevel->name }})
+                        </flux:select.option>
+                    @endforeach
+                </flux:select>
 
-            <flux:select wire:model.live="periodId" label="Trimestre" placeholder="Selecciona un trimestre">
-                @foreach ($this->activeYear->periods as $period)
-                    <flux:select.option value="{{ $period->id }}">{{ $period->name }}</flux:select.option>
-                @endforeach
-            </flux:select>
+                <flux:select wire:model.live="subjectId" label="Materia" placeholder="Selecciona una materia" :disabled="! $classroomId">
+                    @foreach ($this->subjects as $subject)
+                        <flux:select.option value="{{ $subject->id }}">{{ $subject->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+
+                <flux:select wire:model.live="periodId" label="Trimestre" placeholder="Selecciona un trimestre">
+                    @foreach ($this->activeYear->periods as $period)
+                        <flux:select.option value="{{ $period->id }}">{{ $period->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+            </div>
         </div>
 
         {{-- Tabla de notas --}}
@@ -207,7 +219,8 @@ new #[Layout('layouts.app')] #[Title('Notas')] class extends Component
                 <fieldset @disabled(! auth()->user()->can('scores.enter'))>
                     <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-4">
                         @cannot('scores.enter')
-                            <div class="rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-3 text-sm text-zinc-500">
+                            <div class="flex items-center gap-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-3 text-sm text-zinc-500">
+                                <flux:icon name="lock-closed" class="size-4 shrink-0" />
                                 Solo lectura — no tienes permiso para registrar notas.
                             </div>
                         @endcannot
@@ -220,8 +233,11 @@ new #[Layout('layouts.app')] #[Title('Notas')] class extends Component
                             <flux:table.rows>
                                 @foreach ($this->enrollments as $enrollment)
                                     <flux:table.row>
-                                        <flux:table.cell class="font-medium">
-                                            {{ $enrollment->student->full_name }}
+                                        <flux:table.cell>
+                                            <div class="flex items-center gap-3">
+                                                <x-avatar-initials :initials="$enrollment->student->initials" />
+                                                <span class="font-medium">{{ $enrollment->student->full_name }}</span>
+                                            </div>
                                         </flux:table.cell>
                                         <flux:table.cell>
                                             <flux:input
@@ -248,7 +264,11 @@ new #[Layout('layouts.app')] #[Title('Notas')] class extends Component
                     </div>
                 </fieldset>
             @else
-                <flux:text class="text-zinc-500">No hay estudiantes matriculados activos en esta aula.</flux:text>
+                <div class="flex flex-col items-center justify-center py-16 text-center">
+                    <flux:icon name="user-group" class="mb-3 size-10 text-zinc-300 dark:text-zinc-600" />
+                    <flux:heading>Sin estudiantes</flux:heading>
+                    <flux:text class="text-zinc-500">No hay estudiantes matriculados activos en esta aula.</flux:text>
+                </div>
             @endif
         @endif
     @endif
