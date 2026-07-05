@@ -4,6 +4,9 @@ use App\Enums\Shift;
 use App\Models\AcademicYear;
 use App\Models\Classroom;
 use App\Models\Student;
+use App\Models\SubjectAssignment;
+use App\Models\Teacher;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -46,6 +49,29 @@ new #[Layout('layouts.app')] #[Title('Estudiantes')] class extends Component
     }
 
     #[Computed]
+    public function myTeacher(): ?Teacher
+    {
+        return Auth::user()->teacher;
+    }
+
+    /**
+     * Null = sin restricción (admin/secretaria ven todo el colegio). Para un
+     * docente, solo las aulas donde tiene una materia asignada este año —
+     * un especialista itinerante no necesita ver el resto del colegio.
+     */
+    #[Computed]
+    public function myClassroomIds()
+    {
+        if (! $this->myTeacher || ! $this->activeYear) {
+            return null;
+        }
+
+        return SubjectAssignment::where('teacher_id', $this->myTeacher->id)
+            ->where('academic_year_id', $this->activeYear->id)
+            ->pluck('classroom_id');
+    }
+
+    #[Computed]
     public function classroomsForFilter()
     {
         if (! $this->activeYear) {
@@ -53,6 +79,7 @@ new #[Layout('layouts.app')] #[Title('Estudiantes')] class extends Component
         }
 
         return Classroom::where('academic_year_id', $this->activeYear->id)
+            ->when($this->myClassroomIds !== null, fn ($q) => $q->whereIn('id', $this->myClassroomIds))
             ->with('grade.educationLevel')
             ->get()
             ->sortBy(fn ($c) => $c->grade->order);
@@ -78,6 +105,7 @@ new #[Layout('layouts.app')] #[Title('Estudiantes')] class extends Component
             })
             ->when($this->classroomId, fn ($q) => $q->where('enrollments.classroom_id', $this->classroomId))
             ->when($this->shiftFilter, fn ($q) => $q->where('classrooms.shift', $this->shiftFilter))
+            ->when($this->myClassroomIds !== null, fn ($q) => $q->whereIn('enrollments.classroom_id', $this->myClassroomIds))
             ->with([
                 'activeEnrollment.classroom.grade',
                 'guardians' => fn ($q) => $q->wherePivot('is_primary', true),

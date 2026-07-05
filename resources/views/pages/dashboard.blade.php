@@ -87,8 +87,36 @@ new #[Layout('layouts.app')] #[Title('Dashboard')] class extends Component
 
         return SubjectAssignment::where('teacher_id', $this->myTeacher->id)
             ->where('academic_year_id', $this->activeYear->id)
-            ->with(['classroom.grade', 'subject'])
+            ->with(['classroom.grade.educationLevel', 'subject'])
             ->get();
+    }
+
+    /**
+     * Agrupa las asignaciones del docente por nivel educativo — un
+     * especialista itinerante puede tener muchas aulas, y sin agrupar la
+     * lista se vuelve una sola pila difícil de escanear.
+     */
+    #[Computed]
+    public function myAssignmentsByLevel()
+    {
+        return $this->myAssignments
+            ->sortBy(fn ($a) => $a->classroom->grade->order)
+            ->groupBy(fn ($a) => $a->classroom->grade->educationLevel->name)
+            ->sortBy(fn ($assignments) => $assignments->first()->classroom->grade->educationLevel->order);
+    }
+
+    /**
+     * La asistencia es por aula completa, no por materia — a diferencia de
+     * "Ir a Notas" (uno por cada materia asignada), aquí cada aula aparece
+     * una sola vez aunque el docente dé varias materias ahí.
+     */
+    #[Computed]
+    public function myClassroomsForAttendance()
+    {
+        return $this->myAssignments
+            ->unique('classroom_id')
+            ->sortBy(fn ($a) => $a->classroom->grade->order)
+            ->pluck('classroom');
     }
 
     #[Computed]
@@ -269,22 +297,55 @@ new #[Layout('layouts.app')] #[Title('Dashboard')] class extends Component
 
     @if ($this->myTeacher)
         {{-- Docente --}}
-        <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-3">
+        <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-4">
             <flux:heading size="lg">Tus aulas asignadas</flux:heading>
-            @forelse ($this->myAssignments as $assignment)
-                <div class="flex items-center justify-between text-sm">
-                    <span>
-                        {{ $assignment->classroom->grade->name }}-{{ $assignment->classroom->section }}
-                        — {{ $assignment->subject->name }}
-                    </span>
-                    <flux:button size="sm" variant="ghost" :href="route('scores.index')" wire:navigate>
-                        Ir a Notas
-                    </flux:button>
+            @forelse ($this->myAssignmentsByLevel as $levelName => $assignments)
+                <div class="space-y-2">
+                    <flux:subheading class="text-xs uppercase tracking-wide">{{ $levelName }}</flux:subheading>
+                    <div class="space-y-1">
+                        @foreach ($assignments as $assignment)
+                            <div class="flex items-center justify-between text-sm">
+                                <span>
+                                    {{ $assignment->classroom->grade->name }}-{{ $assignment->classroom->section }}
+                                    — {{ $assignment->subject->name }}
+                                </span>
+                                <flux:button
+                                    size="sm"
+                                    variant="ghost"
+                                    :href="route('scores.index', ['aula' => $assignment->classroom_id, 'materia' => $assignment->subject_id])"
+                                    wire:navigate
+                                >
+                                    Ir a Notas
+                                </flux:button>
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
             @empty
                 <flux:text class="text-zinc-400 text-sm">Aún no tienes materias asignadas. Pídele al administrador que te asigne una desde Docentes.</flux:text>
             @endforelse
         </div>
+
+        @can('attendance.view')
+            <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-3">
+                <flux:heading size="lg">Asistencia</flux:heading>
+                @forelse ($this->myClassroomsForAttendance as $classroom)
+                    <div class="flex items-center justify-between text-sm">
+                        <span>{{ $classroom->grade->name }}-{{ $classroom->section }}</span>
+                        <flux:button
+                            size="sm"
+                            variant="ghost"
+                            :href="route('attendance.index', ['aula' => $classroom->id])"
+                            wire:navigate
+                        >
+                            Ir a Asistencia
+                        </flux:button>
+                    </div>
+                @empty
+                    <flux:text class="text-zinc-400 text-sm">Aún no tienes aulas asignadas.</flux:text>
+                @endforelse
+            </div>
+        @endcan
     @endif
 
 </div>

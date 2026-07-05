@@ -126,6 +126,16 @@ class TeacherManagementTest extends TestCase
             ->set('periodId', (string) $period->id)
             ->call('saveScores')
             ->assertForbidden();
+
+        // El enlace "Ir a Notas" del Dashboard llega con aula+materia en la URL
+        // y debe cargar la tabla de una vez, sin que el docente vuelva a elegir.
+        Livewire::actingAs($docenteUser)
+            ->withQueryParams(['aula' => (string) $classroomA->id, 'materia' => (string) $matematica->id])
+            ->test('pages::scores.index')
+            ->assertSet('classroomId', (string) $classroomA->id)
+            ->assertSet('subjectId', (string) $matematica->id)
+            ->assertSee('Ana Pérez')
+            ->assertSee('Guardar notas');
     }
 
     public function test_docente_puede_tener_asignaciones_en_varias_aulas_y_niveles(): void

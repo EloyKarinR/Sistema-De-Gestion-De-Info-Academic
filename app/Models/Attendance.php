@@ -7,12 +7,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Attendance extends Model
 {
+    protected $table = 'attendance';
+
     protected $fillable = [
         'enrollment_id', 'date', 'type', 'justified', 'reason',
     ];
 
     protected $casts = [
-        'date'      => 'date',
+        'date' => 'date',
         'justified' => 'boolean',
     ];
 

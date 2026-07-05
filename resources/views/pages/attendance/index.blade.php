@@ -1,9 +1,9 @@
 <?php
 
 use App\Models\AcademicYear;
+use App\Models\Attendance;
 use App\Models\Classroom;
 use App\Models\Enrollment;
-use App\Models\GradeScore;
 use App\Models\SubjectAssignment;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
@@ -13,37 +13,38 @@ use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
-new #[Layout('layouts.app')] #[Title('Notas')] class extends Component
+new #[Layout('layouts.app')] #[Title('Asistencia')] class extends Component
 {
     #[Url(as: 'aula')]
     public string $classroomId = '';
 
-    #[Url(as: 'materia')]
-    public string $subjectId = '';
+    #[Url(as: 'fecha')]
+    public string $date = '';
 
-    #[Url(as: 'trimestre')]
-    public string $periodId = '';
+    /** @var array<int, string> presente|ausencia|tardanza, por enrollment_id */
+    public array $statuses = [];
+
+    /** @var array<int, bool> */
+    public array $justified = [];
 
     /** @var array<int, string> */
-    public array $scores = [];
+    public array $reasons = [];
 
     public function mount(): void
     {
-        if ($this->periodId === '' && $this->activeYear) {
-            $current = $this->activeYear->periods->first(fn ($p) => now()->between($p->start_date, $p->end_date));
-
-            $this->periodId = (string) ($current?->id ?? $this->activeYear->periods->last()?->id ?? '');
+        if ($this->date === '') {
+            $this->date = now()->format('Y-m-d');
         }
 
-        if ($this->classroomId && $this->subjectId && $this->periodId) {
-            $this->loadScores();
+        if ($this->classroomId) {
+            $this->loadAttendance();
         }
     }
 
     #[Computed]
     public function activeYear(): ?AcademicYear
     {
-        return AcademicYear::where('is_active', true)->with('periods')->first();
+        return AcademicYear::where('is_active', true)->first();
     }
 
     #[Computed]
@@ -74,30 +75,10 @@ new #[Layout('layouts.app')] #[Title('Notas')] class extends Component
         $query = Classroom::where('academic_year_id', $this->activeYear->id)->with('grade.educationLevel');
 
         if ($this->myTeacher) {
-            $query->whereIn('id', $this->myAssignments->pluck('classroom_id'));
+            $query->whereIn('id', $this->myAssignments->pluck('classroom_id')->unique());
         }
 
         return $query->get()->sortBy(fn ($c) => $c->grade->order);
-    }
-
-    #[Computed]
-    public function subjects()
-    {
-        if (! $this->classroomId) {
-            return collect();
-        }
-
-        $subjects = Classroom::with('grade.subjects')->find($this->classroomId)?->grade->subjects ?? collect();
-
-        if ($this->myTeacher) {
-            $allowedSubjectIds = $this->myAssignments
-                ->where('classroom_id', (int) $this->classroomId)
-                ->pluck('subject_id');
-
-            $subjects = $subjects->whereIn('id', $allowedSubjectIds);
-        }
-
-        return $subjects;
     }
 
     #[Computed]
@@ -116,67 +97,73 @@ new #[Layout('layouts.app')] #[Title('Notas')] class extends Component
 
     public function updatedClassroomId(): void
     {
-        $this->subjectId = '';
-        $this->loadScores();
+        $this->loadAttendance();
     }
 
-    public function updatedSubjectId(): void
+    public function updatedDate(): void
     {
-        $this->loadScores();
+        $this->loadAttendance();
     }
 
-    public function updatedPeriodId(): void
+    public function loadAttendance(): void
     {
-        $this->loadScores();
-    }
+        $this->statuses = [];
+        $this->justified = [];
+        $this->reasons = [];
 
-    public function loadScores(): void
-    {
-        $this->scores = [];
-
-        if (! $this->classroomId || ! $this->subjectId || ! $this->periodId) {
+        if (! $this->classroomId || ! $this->date) {
             return;
         }
 
-        $existing = GradeScore::whereIn('enrollment_id', $this->enrollments->pluck('id'))
-            ->where('subject_id', $this->subjectId)
-            ->where('period_id', $this->periodId)
+        $existing = Attendance::whereIn('enrollment_id', $this->enrollments->pluck('id'))
+            ->whereDate('date', $this->date)
             ->get()
             ->keyBy('enrollment_id');
 
         foreach ($this->enrollments as $enrollment) {
-            $this->scores[$enrollment->id] = (string) ($existing->get($enrollment->id)?->score ?? '');
+            $record = $existing->get($enrollment->id);
+
+            $this->statuses[$enrollment->id] = $record?->type ?? 'presente';
+            $this->justified[$enrollment->id] = $record?->justified ?? false;
+            $this->reasons[$enrollment->id] = $record?->reason ?? '';
         }
     }
 
-    public function saveScores(): void
+    public function saveAttendance(): void
     {
-        $this->authorize('scores.enter');
+        $this->authorize('attendance.enter');
 
         if ($this->myTeacher) {
             $assigned = $this->myAssignments->contains(
-                fn ($a) => (string) $a->classroom_id === $this->classroomId && (string) $a->subject_id === $this->subjectId
+                fn ($a) => (string) $a->classroom_id === $this->classroomId
             );
 
-            abort_unless($assigned, 403, 'No tienes esta materia asignada en esta aula.');
+            abort_unless($assigned, 403, 'No tienes esta aula asignada.');
         }
 
         $this->validate([
-            'scores.*' => 'nullable|numeric|min:1|max:5',
+            'reasons.*' => 'nullable|string|max:255',
         ]);
 
-        foreach ($this->scores as $enrollmentId => $score) {
-            if ($score === '' || $score === null) {
-                continue;
-            }
+        foreach ($this->enrollments as $enrollment) {
+            $status = $this->statuses[$enrollment->id] ?? 'presente';
 
-            GradeScore::updateOrCreate(
-                ['enrollment_id' => $enrollmentId, 'subject_id' => $this->subjectId, 'period_id' => $this->periodId],
-                ['score' => $score]
-            );
+            // Solo se guarda una excepción por día (ausencia/tardanza); "presente"
+            // simplemente no deja registro, así que se borra cualquier fila previa.
+            Attendance::where('enrollment_id', $enrollment->id)->whereDate('date', $this->date)->delete();
+
+            if ($status !== 'presente') {
+                Attendance::create([
+                    'enrollment_id' => $enrollment->id,
+                    'date' => $this->date,
+                    'type' => $status,
+                    'justified' => $this->justified[$enrollment->id] ?? false,
+                    'reason' => $this->reasons[$enrollment->id] ?: null,
+                ]);
+            }
         }
 
-        Flux::toast(variant: 'success', text: 'Notas guardadas correctamente.');
+        Flux::toast(variant: 'success', text: 'Asistencia guardada correctamente.');
     }
 }; ?>
 
@@ -184,30 +171,30 @@ new #[Layout('layouts.app')] #[Title('Notas')] class extends Component
 
     {{-- Encabezado --}}
     <div>
-        <flux:heading size="xl">Notas</flux:heading>
-        <flux:subheading>Captura de calificaciones por aula, materia y trimestre</flux:subheading>
+        <flux:heading size="xl">Asistencia</flux:heading>
+        <flux:subheading>Registro diario de asistencia por aula</flux:subheading>
     </div>
 
     @if (! $this->activeYear)
         <div class="flex flex-col items-center justify-center py-16 text-center">
             <flux:icon name="calendar" class="mb-3 size-10 text-zinc-300" />
             <flux:heading>Sin año escolar activo</flux:heading>
-            <flux:text class="text-zinc-500">Activa un año escolar antes de registrar notas.</flux:text>
+            <flux:text class="text-zinc-500">Activa un año escolar antes de registrar asistencia.</flux:text>
         </div>
     @else
         {{-- Selectores --}}
         <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-4">
             <div class="flex items-center gap-3">
-                <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
-                    <flux:icon name="adjustments-horizontal" class="size-5" />
+                <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-600 dark:bg-teal-950/50 dark:text-teal-400">
+                    <flux:icon name="clipboard-document-check" class="size-5" />
                 </div>
                 <div>
                     <flux:heading size="lg" class="leading-tight">Selecciona la clase</flux:heading>
-                    <flux:text class="text-zinc-500 text-sm">Elige aula, materia y trimestre para cargar las notas</flux:text>
+                    <flux:text class="text-zinc-500 text-sm">Elige aula y fecha para cargar la asistencia</flux:text>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <flux:select wire:model.live="classroomId" label="Aula" placeholder="Selecciona un aula">
                     @foreach ($this->classrooms as $classroom)
                         <flux:select.option value="{{ $classroom->id }}">
@@ -216,36 +203,28 @@ new #[Layout('layouts.app')] #[Title('Notas')] class extends Component
                     @endforeach
                 </flux:select>
 
-                <flux:select wire:model.live="subjectId" label="Materia" placeholder="Selecciona una materia" :disabled="! $classroomId">
-                    @foreach ($this->subjects as $subject)
-                        <flux:select.option value="{{ $subject->id }}">{{ $subject->name }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-
-                <flux:select wire:model.live="periodId" label="Trimestre" placeholder="Selecciona un trimestre">
-                    @foreach ($this->activeYear->periods as $period)
-                        <flux:select.option value="{{ $period->id }}">{{ $period->name }}</flux:select.option>
-                    @endforeach
-                </flux:select>
+                <flux:input wire:model.live="date" label="Fecha" type="date" />
             </div>
         </div>
 
-        {{-- Tabla de notas --}}
-        @if ($classroomId && $subjectId && $periodId)
+        {{-- Tabla de asistencia --}}
+        @if ($classroomId && $date)
             @if ($this->enrollments->count())
-                <fieldset @disabled(! auth()->user()->can('scores.enter'))>
+                <fieldset @disabled(! auth()->user()->can('attendance.enter'))>
                     <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-4">
-                        @cannot('scores.enter')
+                        @cannot('attendance.enter')
                             <div class="flex items-center gap-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-3 text-sm text-zinc-500">
                                 <flux:icon name="lock-closed" class="size-4 shrink-0" />
-                                Solo lectura — no tienes permiso para registrar notas.
+                                Solo lectura — no tienes permiso para registrar asistencia.
                             </div>
                         @endcannot
 
                         <flux:table>
                             <flux:table.columns>
                                 <flux:table.column>Estudiante</flux:table.column>
-                                <flux:table.column>Nota (1.0-5.0)</flux:table.column>
+                                <flux:table.column>Estado</flux:table.column>
+                                <flux:table.column>Justificada</flux:table.column>
+                                <flux:table.column>Motivo</flux:table.column>
                             </flux:table.columns>
                             <flux:table.rows>
                                 @foreach ($this->enrollments as $enrollment)
@@ -257,24 +236,31 @@ new #[Layout('layouts.app')] #[Title('Notas')] class extends Component
                                             </div>
                                         </flux:table.cell>
                                         <flux:table.cell>
-                                            <flux:input
-                                                wire:model="scores.{{ $enrollment->id }}"
-                                                type="number"
-                                                min="1"
-                                                max="5"
-                                                step="0.1"
-                                                class="max-w-[120px]"
-                                            />
+                                            <flux:select wire:model.live="statuses.{{ $enrollment->id }}" size="sm" class="max-w-[160px]">
+                                                <flux:select.option value="presente">Presente</flux:select.option>
+                                                <flux:select.option value="ausencia">Ausente</flux:select.option>
+                                                <flux:select.option value="tardanza">Tardanza</flux:select.option>
+                                            </flux:select>
+                                        </flux:table.cell>
+                                        <flux:table.cell>
+                                            @if (($statuses[$enrollment->id] ?? 'presente') !== 'presente')
+                                                <flux:checkbox wire:model="justified.{{ $enrollment->id }}" />
+                                            @endif
+                                        </flux:table.cell>
+                                        <flux:table.cell>
+                                            @if (($statuses[$enrollment->id] ?? 'presente') !== 'presente')
+                                                <flux:input wire:model="reasons.{{ $enrollment->id }}" size="sm" placeholder="Motivo (opcional)" class="max-w-[200px]" />
+                                            @endif
                                         </flux:table.cell>
                                     </flux:table.row>
                                 @endforeach
                             </flux:table.rows>
                         </flux:table>
 
-                        @can('scores.enter')
+                        @can('attendance.enter')
                             <div class="flex justify-end">
-                                <flux:button variant="primary" wire:click="saveScores" wire:loading.attr="disabled">
-                                    Guardar notas
+                                <flux:button variant="primary" wire:click="saveAttendance" wire:loading.attr="disabled">
+                                    Guardar asistencia
                                 </flux:button>
                             </div>
                         @endcan
