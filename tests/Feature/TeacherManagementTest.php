@@ -100,12 +100,12 @@ class TeacherManagementTest extends TestCase
             ->set('classroomId', (string) $classroomA->id)
             ->set('subjectId', (string) $matematica->id)
             ->set('periodId', (string) $period->id)
-            ->set("scores.{$enrollment->id}", '88')
+            ->set("scores.{$enrollment->id}", '4.5')
             ->call('saveScores')
             ->assertHasNoErrors();
 
         $this->assertDatabaseHas('grade_scores', [
-            'enrollment_id' => $enrollment->id, 'subject_id' => $matematica->id, 'score' => 88,
+            'enrollment_id' => $enrollment->id, 'subject_id' => $matematica->id, 'score' => 4.5,
         ]);
 
         // No puede guardar Español (no asignado) en la misma aula
@@ -114,7 +114,7 @@ class TeacherManagementTest extends TestCase
             ->set('classroomId', (string) $classroomA->id)
             ->set('subjectId', (string) $espanol->id)
             ->set('periodId', (string) $period->id)
-            ->set("scores.{$enrollment->id}", '70')
+            ->set("scores.{$enrollment->id}", '3.5')
             ->call('saveScores')
             ->assertForbidden();
 

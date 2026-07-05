@@ -145,7 +145,7 @@ new #[Layout('layouts.app')] #[Title('Notas')] class extends Component
         }
 
         $this->validate([
-            'scores.*' => 'nullable|numeric|min:0|max:100',
+            'scores.*' => 'nullable|numeric|min:1|max:5',
         ]);
 
         foreach ($this->scores as $enrollmentId => $score) {
@@ -228,7 +228,7 @@ new #[Layout('layouts.app')] #[Title('Notas')] class extends Component
                         <flux:table>
                             <flux:table.columns>
                                 <flux:table.column>Estudiante</flux:table.column>
-                                <flux:table.column>Nota (0-100)</flux:table.column>
+                                <flux:table.column>Nota (1.0-5.0)</flux:table.column>
                             </flux:table.columns>
                             <flux:table.rows>
                                 @foreach ($this->enrollments as $enrollment)
@@ -243,8 +243,8 @@ new #[Layout('layouts.app')] #[Title('Notas')] class extends Component
                                             <flux:input
                                                 wire:model="scores.{{ $enrollment->id }}"
                                                 type="number"
-                                                min="0"
-                                                max="100"
+                                                min="1"
+                                                max="5"
                                                 step="0.1"
                                                 class="max-w-[120px]"
                                             />

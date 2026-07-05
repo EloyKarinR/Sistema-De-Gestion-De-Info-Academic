@@ -2,7 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\EducationLevel;
 use App\Models\Enrollment;
+use App\Models\Grade;
+use App\Models\GradeScore;
+use App\Models\Institution;
 use App\Models\Student;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -13,6 +17,21 @@ use Tests\TestCase;
 class StudentPromotionTest extends TestCase
 {
     use RefreshDatabase, SigaTestHelpers;
+
+    /**
+     * makeGrade() del trait siempre crea bajo "Básica General" (primaria),
+     * así que para probar la regla de secundaria se crean los grados
+     * directamente bajo un nivel "Media".
+     */
+    private function makeSecondaryGrade(Institution $institution, string $name, int $number): Grade
+    {
+        $level = EducationLevel::firstOrCreate(
+            ['institution_id' => $institution->id, 'name' => 'Media'],
+            ['institution_type' => 'colegio', 'grade_from' => 10, 'grade_to' => 12, 'order' => 4]
+        );
+
+        return Grade::create(['education_level_id' => $level->id, 'name' => $name, 'number' => $number, 'order' => $number - 9]);
+    }
 
     public function test_admin_puede_promover_estudiantes_al_siguiente_grado(): void
     {
@@ -186,5 +205,90 @@ class StudentPromotionTest extends TestCase
         $response = $this->actingAs($secretaria)->get(route('academic.promote'));
 
         $response->assertForbidden();
+    }
+
+    public function test_estudiante_de_secundaria_con_promedio_bajo_no_se_promueve(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $admin = $this->makeStaffUser('admin', $team);
+
+        $institution = $this->makeInstitution();
+        $grade10 = $this->makeSecondaryGrade($institution, '10°', 10);
+        $this->makeSecondaryGrade($institution, '11°', 11);
+
+        $yearOld = $this->makeActiveYear($institution, 2025);
+        $yearNew = $this->makeActiveYear($institution, 2026);
+        $yearOld->update(['is_active' => false]);
+
+        $classroomOld = $this->makeClassroom($grade10, $yearOld, 'A');
+        $matematica = $institution->subjects()->create(['name' => 'Matemática']);
+        $period = $yearOld->periods()->first();
+
+        $student = Student::create([
+            'first_name' => 'Carlos', 'last_name' => 'Ruiz',
+            'birth_date' => now()->subYears(15)->format('Y-m-d'), 'sex' => 'M', 'address' => 'Calle 3',
+        ]);
+        $enrollment = Enrollment::create([
+            'student_id' => $student->id, 'classroom_id' => $classroomOld->id, 'academic_year_id' => $yearOld->id,
+            'registered_by' => $admin->id, 'enrollment_date' => '2025-02-01',
+            'status' => 'activo', 'enrollment_type' => 'nuevo_ingreso',
+        ]);
+        GradeScore::create(['enrollment_id' => $enrollment->id, 'subject_id' => $matematica->id, 'period_id' => $period->id, 'score' => 2.5]);
+
+        Livewire::actingAs($admin)
+            ->test('pages::academic.promote')
+            ->set('sourceYearId', $yearOld->id)
+            ->set('targetYearId', $yearNew->id)
+            ->assertSee('No alcanzan la nota mínima')
+            ->assertSee('Carlos Ruiz');
+
+        $this->assertSame(0, Enrollment::where('academic_year_id', $yearNew->id)->count());
+    }
+
+    public function test_estudiante_de_secundaria_con_promedio_suficiente_se_promueve(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $admin = $this->makeStaffUser('admin', $team);
+
+        $institution = $this->makeInstitution();
+        $grade10 = $this->makeSecondaryGrade($institution, '10°', 10);
+        $grade11 = $this->makeSecondaryGrade($institution, '11°', 11);
+
+        $yearOld = $this->makeActiveYear($institution, 2025);
+        $yearNew = $this->makeActiveYear($institution, 2026);
+        $yearOld->update(['is_active' => false]);
+
+        $classroomOld = $this->makeClassroom($grade10, $yearOld, 'A');
+        $this->makeClassroom($grade11, $yearNew, 'A');
+        $matematica = $institution->subjects()->create(['name' => 'Matemática']);
+        $period = $yearOld->periods()->first();
+
+        $student = Student::create([
+            'first_name' => 'Carlos', 'last_name' => 'Ruiz',
+            'birth_date' => now()->subYears(15)->format('Y-m-d'), 'sex' => 'M', 'address' => 'Calle 3',
+        ]);
+        $enrollment = Enrollment::create([
+            'student_id' => $student->id, 'classroom_id' => $classroomOld->id, 'academic_year_id' => $yearOld->id,
+            'registered_by' => $admin->id, 'enrollment_date' => '2025-02-01',
+            'status' => 'activo', 'enrollment_type' => 'nuevo_ingreso',
+        ]);
+        GradeScore::create(['enrollment_id' => $enrollment->id, 'subject_id' => $matematica->id, 'period_id' => $period->id, 'score' => 4.0]);
+
+        Livewire::actingAs($admin)
+            ->test('pages::academic.promote')
+            ->set('sourceYearId', $yearOld->id)
+            ->set('targetYearId', $yearNew->id)
+            ->call('confirmPromotion');
+
+        $this->assertDatabaseHas('enrollments', [
+            'student_id' => $student->id,
+            'academic_year_id' => $yearNew->id,
+            'status' => 'activo',
+            'enrollment_type' => 'promovido',
+        ]);
     }
 }

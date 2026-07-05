@@ -62,4 +62,13 @@ class Grade extends Model
     {
         return $this->belongsToMany(Subject::class, 'grade_subjects');
     }
+
+    /**
+     * Secundaria (Pre-Media/Media) exige nota mínima para pasar de año;
+     * preescolar y primaria (Básica General) promueven sin importar la nota.
+     */
+    public function isSecondary(): bool
+    {
+        return in_array($this->educationLevel->name, ['Pre-Media', 'Media'], true);
+    }
 }

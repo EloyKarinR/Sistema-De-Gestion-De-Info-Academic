@@ -20,7 +20,7 @@ class GradeScoreSeeder extends Seeder
             'Español', 'Matemática', 'Ciencias Sociales', 'Ciencias Naturales', 'Religión, Moral y Valores',
         ])->get();
 
-        $sampleScores = [72.0, 78.5, 83.0, 85.5, 88.0, 90.5, 91.0, 93.5, 95.0, 96.5, 98.0, 100.0];
+        $sampleScores = [2.8, 3.0, 3.2, 3.5, 3.7, 3.9, 4.0, 4.2, 4.5, 4.7, 4.8, 5.0];
         $i = 0;
 
         foreach (Enrollment::with('classroom.grade')->get() as $enrollment) {

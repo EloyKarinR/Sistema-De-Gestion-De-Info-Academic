@@ -48,8 +48,9 @@ new #[Layout('layouts.app')] #[Title('Promoción de estudiantes')] class extends
     /**
      * Clasifica cada matrícula activa del año de origen en un balde según lo
      * que le pasaría al promoverla: promovida, egresa (no hay grado
-     * siguiente), sin aula destino, sin cupo, edad fuera de rango, o ya
-     * promovida antes (para que repetir la operación sea seguro/idempotente).
+     * siguiente), no alcanza la nota mínima (solo secundaria), sin aula
+     * destino, sin cupo, edad fuera de rango, o ya promovida antes (para que
+     * repetir la operación sea seguro/idempotente).
      */
     #[Computed]
     public function preview(): array
@@ -58,6 +59,7 @@ new #[Layout('layouts.app')] #[Title('Promoción de estudiantes')] class extends
             'promote' => collect(),
             'already_done' => collect(),
             'graduate' => collect(),
+            'below_minimum' => collect(),
             'no_classroom' => collect(),
             'no_capacity' => collect(),
             'age_mismatch' => collect(),
@@ -95,6 +97,16 @@ new #[Layout('layouts.app')] #[Title('Promoción de estudiantes')] class extends
                 $result['graduate']->push($enrollment);
 
                 continue;
+            }
+
+            if ($enrollment->classroom->grade->isSecondary()) {
+                $average = $enrollment->finalAverage();
+
+                if ($average === null || $average < Enrollment::MINIMUM_PASSING_AVERAGE) {
+                    $result['below_minimum']->push(['enrollment' => $enrollment, 'next_grade' => $nextGrade, 'average' => $average]);
+
+                    continue;
+                }
             }
 
             $candidates = $targetClassrooms
@@ -213,7 +225,7 @@ new #[Layout('layouts.app')] #[Title('Promoción de estudiantes')] class extends
         @php $preview = $this->preview; @endphp
 
         {{-- Resumen --}}
-        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
             <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
                 <flux:heading size="xl" class="leading-tight text-green-600 dark:text-green-400">{{ $preview['promote']->count() }}</flux:heading>
                 <flux:text class="text-zinc-500 text-sm">Listos para promover</flux:text>
@@ -221,6 +233,10 @@ new #[Layout('layouts.app')] #[Title('Promoción de estudiantes')] class extends
             <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
                 <flux:heading size="xl" class="leading-tight">{{ $preview['graduate']->count() }}</flux:heading>
                 <flux:text class="text-zinc-500 text-sm">Egresan</flux:text>
+            </div>
+            <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
+                <flux:heading size="xl" class="leading-tight text-red-600 dark:text-red-400">{{ $preview['below_minimum']->count() }}</flux:heading>
+                <flux:text class="text-zinc-500 text-sm">Bajo nota mínima</flux:text>
             </div>
             <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
                 <flux:heading size="xl" class="leading-tight text-amber-600 dark:text-amber-400">{{ $preview['no_classroom']->count() }}</flux:heading>
@@ -272,7 +288,7 @@ new #[Layout('layouts.app')] #[Title('Promoción de estudiantes')] class extends
                             <flux:table.row>
                                 <flux:table.cell>
                                     <div class="flex items-center gap-3">
-                                        <x-avatar-initials :initials="$row['enrollment']->student->initials" />
+                                        <x-avatar-initials :initials="$row['enrollment']->student->initials" :photo="$row['enrollment']->student->photo" />
                                         <span class="font-medium">{{ $row['enrollment']->student->full_name }}</span>
                                     </div>
                                 </flux:table.cell>
@@ -288,6 +304,27 @@ new #[Layout('layouts.app')] #[Title('Promoción de estudiantes')] class extends
                 </flux:table>
             @endif
         </div>
+
+        {{-- Bajo nota mínima (requieren rehabilitación) --}}
+        @if ($preview['below_minimum']->isNotEmpty())
+            <div class="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10 p-6 space-y-3">
+                <flux:heading size="lg">No alcanzan la nota mínima</flux:heading>
+                <flux:text class="text-sm text-zinc-500">
+                    Secundaria requiere un promedio ≥ {{ number_format(\App\Models\Enrollment::MINIMUM_PASSING_AVERAGE, 1) }} para pasar de año. No se promueven automáticamente — requieren rehabilitación.
+                </flux:text>
+
+                <div class="space-y-2">
+                    @foreach ($preview['below_minimum'] as $row)
+                        <div class="flex items-center justify-between text-sm">
+                            <span>{{ $row['enrollment']->student->full_name }}</span>
+                            <span class="text-zinc-500">
+                                Promedio: {{ $row['average'] !== null ? number_format($row['average'], 1) : 'sin notas' }}
+                            </span>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
 
         {{-- Requieren atención manual --}}
         @php

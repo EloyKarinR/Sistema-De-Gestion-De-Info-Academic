@@ -39,7 +39,7 @@ class GuardianPortalTest extends TestCase
         Enrollment::create(['student_id' => $studentB->id, 'classroom_id' => $classroom->id, 'academic_year_id' => $year->id, 'registered_by' => $admin->id, 'enrollment_date' => '2026-02-01', 'status' => 'activo', 'enrollment_type' => 'nuevo_ingreso']);
 
         $period = $year->periods()->first();
-        GradeScore::create(['enrollment_id' => $enrollmentA->id, 'subject_id' => $matematica->id, 'period_id' => $period->id, 'score' => 95.5]);
+        GradeScore::create(['enrollment_id' => $enrollmentA->id, 'subject_id' => $matematica->id, 'period_id' => $period->id, 'score' => 4.5]);
 
         $guardian = Guardian::create(['first_name' => 'Marta', 'last_name' => 'Pérez', 'relationship' => 'madre', 'primary_phone' => '6000-0000']);
         $studentA->guardians()->attach($guardian->id, ['is_primary' => true]);
@@ -62,7 +62,7 @@ class GuardianPortalTest extends TestCase
             ->assertSee($grade->name.'-'.$classroom->section)
             ->assertSee('Beto Gómez')
             ->assertSee('Matemática')
-            ->assertSee('95.5')
+            ->assertSee('4.5')
             ->assertDontSee('Ana Pérez');
     }
 

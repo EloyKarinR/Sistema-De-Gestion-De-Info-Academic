@@ -8,6 +8,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Enrollment extends Model
 {
+    /**
+     * Nota mínima para pasar de año en secundaria (escala 1.0-5.0). En
+     * primaria/preescolar la promoción es automática sin importar la nota.
+     */
+    public const MINIMUM_PASSING_AVERAGE = 3.0;
+
     protected $fillable = [
         'student_id', 'classroom_id', 'academic_year_id', 'registered_by',
         'enrollment_date', 'status', 'status_date', 'status_reason', 'enrollment_type', 'receipt_number',
@@ -53,6 +59,17 @@ class Enrollment extends Model
     public function gradeScores(): HasMany
     {
         return $this->hasMany(GradeScore::class);
+    }
+
+    /**
+     * Promedio general del año (todas las materias, los 3 trimestres),
+     * escala 1.0-5.0. Null si todavía no tiene ninguna nota registrada.
+     */
+    public function finalAverage(): ?float
+    {
+        $average = $this->gradeScores()->avg('score');
+
+        return $average !== null ? round((float) $average, 1) : null;
     }
 
     public function habitScores(): HasMany
