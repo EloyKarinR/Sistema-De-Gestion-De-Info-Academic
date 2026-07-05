@@ -55,7 +55,7 @@ class ClassScheduleTest extends TestCase
         }
     }
 
-    public function test_el_horario_se_ve_en_academico_y_en_el_portal(): void
+    public function test_el_horario_se_ve_en_academico_la_ficha_del_estudiante_y_el_portal(): void
     {
         $this->seed(RoleSeeder::class);
 
@@ -86,9 +86,45 @@ class ClassScheduleTest extends TestCase
             ->assertSee('Matemática')
             ->assertSee('Carlos Mendoza');
 
+        Livewire::actingAs($admin)
+            ->test('pages::students.show', ['student' => $student])
+            ->assertSee('Horario semanal')
+            ->assertSee('Matemática')
+            ->assertSee('Carlos Mendoza');
+
         Livewire::actingAs($acudienteUser)
             ->test('pages::portal.index')
             ->assertSee('Horario semanal')
             ->assertSee('Matemática');
+    }
+
+    public function test_admin_puede_generar_el_horario_de_un_aula_que_no_tenia(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $admin = $this->makeStaffUser('admin', $team);
+
+        $institution = $this->makeInstitution();
+        $grade = $this->makeGrade($institution);
+        $year = $this->makeActiveYear($institution);
+        $matematica = $institution->subjects()->create(['name' => 'Matemática']);
+        $grade->subjects()->attach($matematica->id);
+        $classroom = $this->makeClassroom($grade, $year);
+
+        $teacher = Teacher::create(['user_id' => $this->makeStaffUser('docente', $team)->id, 'cedula' => '8-999-0002', 'first_name' => 'Carlos', 'last_name' => 'Mendoza', 'shift' => 'matutino']);
+        SubjectAssignment::create(['teacher_id' => $teacher->id, 'classroom_id' => $classroom->id, 'subject_id' => $matematica->id, 'academic_year_id' => $year->id]);
+
+        // A diferencia de los otros tests, aquí nunca se corre el
+        // ClassScheduleSeeder — el aula queda sin horario, como pasaría con
+        // un aula nueva creada manualmente o copiada del año anterior.
+        $this->assertSame(0, $classroom->classSchedules()->count());
+
+        Livewire::actingAs($admin)
+            ->test('pages::academic.index')
+            ->assertSee('Generar horarios faltantes')
+            ->call('generateMissingSchedules');
+
+        $this->assertSame(30, $classroom->classSchedules()->count());
     }
 }

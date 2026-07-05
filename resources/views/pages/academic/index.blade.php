@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Academic\GenerateClassSchedule;
 use App\Enums\Shift;
 use App\Models\AcademicYear;
 use App\Models\Classroom;
@@ -46,6 +47,18 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
         return AcademicYear::where('is_active', true)
             ->with(['periods', 'classrooms.grade.educationLevel'])
             ->first();
+    }
+
+    #[Computed]
+    public function classroomsWithoutScheduleCount(): int
+    {
+        if (! $this->activeYear) {
+            return 0;
+        }
+
+        return Classroom::where('academic_year_id', $this->activeYear->id)
+            ->doesntHave('classSchedules')
+            ->count();
     }
 
     #[Computed]
@@ -172,6 +185,47 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
         unset($this->activeYear);
 
         Flux::toast(variant: 'success', text: "{$created} aula(s) copiada(s) desde {$previousYear->year}.");
+    }
+
+    public function generateMissingSchedules(): void
+    {
+        $this->authorize('academic.manage');
+
+        $year = AcademicYear::where('is_active', true)->with('classrooms')->first();
+
+        if (! $year) {
+            Flux::toast(variant: 'danger', text: 'No hay un año escolar activo.');
+
+            return;
+        }
+
+        $generator = new GenerateClassSchedule;
+        $generated = 0;
+        $skipped = 0;
+
+        foreach ($year->classrooms as $classroom) {
+            if ($classroom->classSchedules()->exists()) {
+                continue;
+            }
+
+            $generator->handle($classroom);
+
+            if ($classroom->classSchedules()->exists()) {
+                $generated++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        unset($this->activeYear);
+
+        $message = "{$generated} horario(s) generado(s).";
+
+        if ($skipped > 0) {
+            $message .= " {$skipped} aula(s) sin materias asignadas todavía, no se les pudo generar horario.";
+        }
+
+        Flux::toast(variant: 'success', text: $message);
     }
 
     public function deleteClassroom(int $id): void
@@ -375,6 +429,17 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
                                 wire:confirm="¿Copiar las aulas del año anterior a {{ $this->activeYear->year }}?"
                             >
                                 Copiar aulas del año anterior
+                            </flux:button>
+                        @endif
+                        @if ($this->classroomsWithoutScheduleCount > 0)
+                            <flux:button
+                                icon="calendar-days"
+                                size="sm"
+                                variant="ghost"
+                                wire:click="generateMissingSchedules"
+                                wire:confirm="¿Generar el horario de las {{ $this->classroomsWithoutScheduleCount }} aula(s) que todavía no tienen uno?"
+                            >
+                                Generar horarios faltantes
                             </flux:button>
                         @endif
                         <flux:modal.trigger name="add-classroom">

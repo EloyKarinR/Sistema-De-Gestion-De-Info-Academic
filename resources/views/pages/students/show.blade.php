@@ -2,6 +2,7 @@
 
 use App\Enums\Shift;
 use App\Enums\TeamRole;
+use App\Models\ClassSchedule;
 use App\Models\Guardian;
 use App\Models\Student;
 use App\Models\User;
@@ -9,6 +10,7 @@ use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -53,7 +55,24 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
             'enrollments.classroom.grade',
             'enrollments.academicYear',
             'enrollments.registeredBy',
+            'activeEnrollment.classroom.grade',
         ]);
+    }
+
+    #[Computed]
+    public function scheduleByDay()
+    {
+        $enrollment = $this->student->activeEnrollment;
+
+        if (! $enrollment) {
+            return collect();
+        }
+
+        return ClassSchedule::where('classroom_id', $enrollment->classroom_id)
+            ->with('subjectAssignment.subject', 'subjectAssignment.teacher')
+            ->orderBy('start_time')
+            ->get()
+            ->groupBy('day_of_week');
     }
 
     public function updatePhoto(): void
@@ -422,6 +441,57 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
         </div>
 
     </div>
+
+    {{-- Horario semanal --}}
+    @if ($student->activeEnrollment)
+        <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-4">
+            <flux:heading size="lg">Horario semanal</flux:heading>
+
+            @if ($this->scheduleByDay->isEmpty())
+                <flux:text class="text-zinc-500">Aún no hay un horario generado para esta aula.</flux:text>
+            @else
+                @php
+                    $dayNames = [1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes'];
+                    $timeSlots = $this->scheduleByDay->flatten(1)->unique(fn ($s) => $s->start_time->format('H:i'))->sortBy('start_time');
+                @endphp
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="text-left text-zinc-500 font-medium p-2 border-b border-zinc-200 dark:border-zinc-700">Hora</th>
+                                @foreach ($dayNames as $dayName)
+                                    <th class="text-left text-zinc-500 font-medium p-2 border-b border-zinc-200 dark:border-zinc-700">{{ $dayName }}</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($timeSlots as $slot)
+                                <tr>
+                                    <td class="p-2 border-b border-zinc-100 dark:border-zinc-800 text-zinc-500 whitespace-nowrap">
+                                        {{ $slot->start_time->format('H:i') }}–{{ $slot->end_time->format('H:i') }}
+                                    </td>
+                                    @foreach (array_keys($dayNames) as $day)
+                                        @php
+                                            $entry = ($this->scheduleByDay->get($day) ?? collect())
+                                                ->first(fn ($s) => $s->start_time->format('H:i') === $slot->start_time->format('H:i'));
+                                        @endphp
+                                        <td class="p-2 border-b border-zinc-100 dark:border-zinc-800">
+                                            @if ($entry)
+                                                <div class="font-medium">{{ $entry->subjectAssignment->subject->name }}</div>
+                                                <div class="text-xs text-zinc-400">{{ $entry->subjectAssignment->teacher->full_name }}</div>
+                                            @else
+                                                <span class="text-zinc-300 dark:text-zinc-600">—</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+    @endif
 
     {{-- Modal: Editar acudiente --}}
     <flux:modal name="edit-guardian" class="max-w-md">
