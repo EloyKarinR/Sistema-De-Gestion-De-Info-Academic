@@ -98,7 +98,7 @@ new #[Layout('layouts.app')] #[Title('Mi Portal')] class extends Component
     {{-- Encabezado --}}
     <div class="flex items-center gap-3">
         @if ($this->selectedStudent)
-            <x-avatar-initials :initials="$this->selectedStudent->initials" size="size-11" />
+            <x-avatar-initials :initials="$this->selectedStudent->initials" :photo="$this->selectedStudent->photo" size="size-11" />
         @endif
         <div>
             <flux:heading size="xl">Mi Portal</flux:heading>
@@ -172,7 +172,7 @@ new #[Layout('layouts.app')] #[Title('Mi Portal')] class extends Component
                         <flux:heading size="lg">Compañeros de aula</flux:heading>
                         @forelse ($this->classmates as $classmate)
                             <div class="flex items-center gap-2 {{ ! $loop->last ? 'mb-2' : '' }}">
-                                <x-avatar-initials :initials="$classmate->initials" size="size-7" />
+                                <x-avatar-initials :initials="$classmate->initials" :photo="$classmate->photo" size="size-7" />
                                 <span class="text-sm">{{ $classmate->full_name }}</span>
                             </div>
                         @empty

@@ -12,10 +12,15 @@ use Illuminate\Support\Facades\Hash;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Component
 {
+    use WithFileUploads;
+
     public Student $student;
+
+    public $photo = null;
 
     public ?int $editGuardianId = null;
 
@@ -49,6 +54,20 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
             'enrollments.academicYear',
             'enrollments.registeredBy',
         ]);
+    }
+
+    public function updatePhoto(): void
+    {
+        $this->authorize('student.edit');
+
+        $this->validate(['photo' => 'required|image|max:2048']);
+
+        $this->student->update(['photo' => $this->photo->store('students', 'public')]);
+
+        $this->photo = null;
+
+        Flux::modal('update-photo')->close();
+        Flux::toast(variant: 'success', text: 'Foto actualizada correctamente.');
     }
 
     public function openEditModal(int $guardianId): void
@@ -160,7 +179,19 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
             :href="route('students.index')"
             wire:navigate
         />
-        <x-avatar-initials :initials="$student->initials" size="size-14" text="text-lg" />
+        <div class="relative shrink-0">
+            <x-avatar-initials :initials="$student->initials" :photo="$student->photo" size="size-14" text="text-lg" />
+            @can('student.edit')
+                <flux:modal.trigger name="update-photo">
+                    <button
+                        type="button"
+                        class="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-2 border-white dark:border-zinc-900"
+                    >
+                        <flux:icon name="camera" class="size-3.5" />
+                    </button>
+                </flux:modal.trigger>
+            @endcan
+        </div>
         <div>
             <flux:heading size="xl">{{ $student->full_name }}</flux:heading>
             <flux:subheading>Ficha del estudiante</flux:subheading>
@@ -456,6 +487,29 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
             </flux:modal.close>
             <flux:button variant="primary" wire:click="grantPortalAccess" wire:loading.attr="disabled">
                 Crear acceso
+            </flux:button>
+        </div>
+    </flux:modal>
+
+    {{-- Modal: Actualizar foto --}}
+    <flux:modal name="update-photo" class="max-w-md">
+        <flux:heading size="lg" class="mb-4">Actualizar foto</flux:heading>
+
+        <div class="space-y-4">
+            <flux:input wire:model="photo" label="Foto del estudiante" type="file" accept="image/*" />
+            @error('photo') <flux:error>{{ $message }}</flux:error> @enderror
+
+            @if ($photo)
+                <img src="{{ $photo->temporaryUrl() }}" class="size-20 rounded-full object-cover border border-zinc-200 dark:border-zinc-700">
+            @endif
+        </div>
+
+        <div class="mt-6 flex justify-end gap-2">
+            <flux:modal.close>
+                <flux:button variant="ghost">Cancelar</flux:button>
+            </flux:modal.close>
+            <flux:button variant="primary" wire:click="updatePhoto" wire:loading.attr="disabled">
+                Guardar
             </flux:button>
         </div>
     </flux:modal>

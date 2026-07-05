@@ -12,9 +12,12 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Component
 {
+    use WithFileUploads;
+
     public int $step = 1;
 
     // Paso 1 — Estudiante
@@ -41,6 +44,8 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
     public string $medicalConditions = '';
 
     public string $previousSchool = '';
+
+    public $photo = null;
 
     // Paso 2 — Acudiente
     public string $guardianCedula = '';
@@ -185,6 +190,7 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
             'birthDate' => 'required|date',
             'sex' => 'required|in:M,F',
             'address' => 'required|string|max:255',
+            'photo' => 'nullable|image|max:2048',
         ]);
 
         $student = Student::create([
@@ -198,6 +204,7 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
             'blood_type' => $this->bloodType ?: null,
             'medical_conditions' => $this->medicalConditions ?: null,
             'previous_school' => $this->previousSchool ?: null,
+            'photo' => $this->photo?->store('students', 'public'),
         ]);
 
         $this->studentId = $student->id;
@@ -416,7 +423,7 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
                             Estudiante encontrado
                         </div>
                         <div class="flex items-center gap-3">
-                            <x-avatar-initials :initials="$this->foundStudent->initials" />
+                            <x-avatar-initials :initials="$this->foundStudent->initials" :photo="$this->foundStudent->photo" />
                             <span class="font-medium">{{ $this->foundStudent->full_name }}</span>
                         </div>
                         <dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
@@ -468,6 +475,15 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
                         <flux:input wire:model="bloodType" label="Tipo de sangre" placeholder="O+" />
                         <flux:input wire:model="previousSchool" label="Escuela anterior" placeholder="Escuela Berta A. López" class="sm:col-span-2" />
                         <flux:input wire:model="medicalConditions" label="Condiciones médicas / alergias" placeholder="Ninguna" class="sm:col-span-2" />
+
+                        <div class="sm:col-span-2">
+                            <flux:input wire:model="photo" label="Foto del estudiante (opcional)" type="file" accept="image/*" />
+                            @error('photo') <flux:error>{{ $message }}</flux:error> @enderror
+
+                            @if ($photo)
+                                <img src="{{ $photo->temporaryUrl() }}" class="mt-2 size-16 rounded-full object-cover border border-zinc-200 dark:border-zinc-700">
+                            @endif
+                        </div>
                     </div>
 
                     <div class="flex gap-2 justify-end">
@@ -667,7 +683,7 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
 
                     <div class="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
                         <div class="col-span-2 flex items-center gap-2 mb-1">
-                            <x-avatar-initials :initials="$r->student->initials" size="size-7" />
+                            <x-avatar-initials :initials="$r->student->initials" :photo="$r->student->photo" size="size-7" />
                             <span class="font-medium text-zinc-700 dark:text-zinc-300">Estudiante</span>
                         </div>
                         <div class="flex justify-between"><span class="text-zinc-500">Nombre</span><span class="font-medium">{{ $r->student->full_name }}</span></div>

@@ -141,7 +141,7 @@ new #[Layout('layouts.app')] #[Title('Estudiantes')] class extends Component
                     <flux:table.row>
                         <flux:table.cell>
                             <div class="flex items-center gap-3">
-                                <x-avatar-initials :initials="$student->initials" />
+                                <x-avatar-initials :initials="$student->initials" :photo="$student->photo" />
                                 <span class="font-medium">{{ $student->full_name }}</span>
                             </div>
                         </flux:table.cell>
