@@ -35,6 +35,29 @@ class Grade extends Model
         return $this->hasMany(Classroom::class);
     }
 
+    /**
+     * Grado inmediatamente siguiente en la secuencia completa del colegio
+     * (Pre-Kinder → Kinder → 1° ... → 12°), cruzando niveles educativos.
+     * "order" solo es único dentro de cada nivel, por eso se combina con el
+     * order del nivel educativo. Null si este es el último grado (egresa).
+     */
+    public function next(): ?self
+    {
+        return static::query()
+            ->join('education_levels', 'education_levels.id', '=', 'grades.education_level_id')
+            ->where(function ($q) {
+                $q->where('education_levels.order', '>', $this->educationLevel->order)
+                    ->orWhere(function ($q) {
+                        $q->where('education_levels.order', $this->educationLevel->order)
+                            ->where('grades.order', '>', $this->order);
+                    });
+            })
+            ->orderBy('education_levels.order')
+            ->orderBy('grades.order')
+            ->select('grades.*')
+            ->first();
+    }
+
     public function subjects(): BelongsToMany
     {
         return $this->belongsToMany(Subject::class, 'grade_subjects');

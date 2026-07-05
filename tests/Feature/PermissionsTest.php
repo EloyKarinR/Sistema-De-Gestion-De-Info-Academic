@@ -49,6 +49,7 @@ class PermissionsTest extends TestCase
         $routes = [
             'institution.edit' => [],
             'academic.index' => [],
+            'academic.promote' => [],
             'students.index' => [],
             'students.show' => [$student],
             'teachers.index' => [],
@@ -67,6 +68,7 @@ class PermissionsTest extends TestCase
         $expected = [
             'institution.edit' => ['admin' => 200, 'secretaria' => 200, 'docente' => 403, 'acudiente' => 403],
             'academic.index' => ['admin' => 200, 'secretaria' => 200, 'docente' => 403, 'acudiente' => 403],
+            'academic.promote' => ['admin' => 200, 'secretaria' => 403, 'docente' => 403, 'acudiente' => 403],
             'students.index' => ['admin' => 200, 'secretaria' => 200, 'docente' => 200, 'acudiente' => 403],
             'students.show' => ['admin' => 200, 'secretaria' => 200, 'docente' => 200, 'acudiente' => 403],
             'teachers.index' => ['admin' => 200, 'secretaria' => 200, 'docente' => 403, 'acudiente' => 403],

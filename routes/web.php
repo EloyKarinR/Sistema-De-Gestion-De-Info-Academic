@@ -15,6 +15,7 @@ Route::prefix('{current_team}')
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('institution', 'pages::institution.edit')->name('institution.edit')->middleware('can:institution.view');
     Route::livewire('academic', 'pages::academic.index')->name('academic.index')->middleware('can:academic.view');
+    Route::livewire('academic/promote', 'pages::academic.promote')->name('academic.promote')->middleware('can:academic.manage');
     Route::livewire('students', 'pages::students.index')->name('students.index')->middleware('can:student.view');
     Route::livewire('students/{student}', 'pages::students.show')->name('students.show')->middleware('can:student.view');
     Route::livewire('teachers', 'pages::teachers.index')->name('teachers.index')->middleware('can:teacher.view');

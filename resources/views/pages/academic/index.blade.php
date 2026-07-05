@@ -253,9 +253,14 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
                 <flux:heading size="lg">Año Escolar Activo</flux:heading>
             </div>
             @can('academic.manage')
-                <flux:modal.trigger name="create-year">
-                    <flux:button icon="plus" size="sm">Nuevo año</flux:button>
-                </flux:modal.trigger>
+                <div class="flex gap-2">
+                    <flux:button icon="arrow-up-circle" size="sm" variant="ghost" :href="route('academic.promote')" wire:navigate>
+                        Promover estudiantes
+                    </flux:button>
+                    <flux:modal.trigger name="create-year">
+                        <flux:button icon="plus" size="sm">Nuevo año</flux:button>
+                    </flux:modal.trigger>
+                </div>
             @endcan
         </div>
 
