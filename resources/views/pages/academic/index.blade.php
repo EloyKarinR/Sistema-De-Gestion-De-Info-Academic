@@ -210,6 +210,22 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
             return;
         }
 
+        $existing = AcademicYear::where('year', $this->newYear)->first();
+
+        if ($existing) {
+            AcademicYear::where('is_active', true)->update(['is_active' => false]);
+            $existing->update(['is_active' => true]);
+
+            unset($this->activeYear);
+            Flux::modal('create-year')->close();
+            Flux::toast(
+                variant: 'success',
+                text: "El año {$existing->year} ya existía — se activó de nuevo en vez de crear uno duplicado."
+            );
+
+            return;
+        }
+
         AcademicYear::where('is_active', true)->update(['is_active' => false]);
 
         $start = Carbon::parse($this->startDate);
@@ -350,15 +366,17 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
             @can('academic.manage')
                 @if ($this->activeYear)
                     <div class="flex gap-2">
-                        <flux:button
-                            icon="document-duplicate"
-                            size="sm"
-                            variant="ghost"
-                            wire:click="copyClassroomsFromPreviousYear"
-                            wire:confirm="¿Copiar las aulas del año anterior a {{ $this->activeYear->year }}? Se omitirán las que ya existan (mismo grado y sección)."
-                        >
-                            Copiar aulas del año anterior
-                        </flux:button>
+                        @if ($this->activeYear->classrooms->isEmpty())
+                            <flux:button
+                                icon="document-duplicate"
+                                size="sm"
+                                variant="ghost"
+                                wire:click="copyClassroomsFromPreviousYear"
+                                wire:confirm="¿Copiar las aulas del año anterior a {{ $this->activeYear->year }}?"
+                            >
+                                Copiar aulas del año anterior
+                            </flux:button>
+                        @endif
                         <flux:modal.trigger name="add-classroom">
                             <flux:button icon="plus" size="sm" variant="primary">Agregar aula</flux:button>
                         </flux:modal.trigger>
@@ -495,7 +513,7 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
     {{-- Modal: Nuevo Año Escolar --}}
     <flux:modal name="create-year" class="max-w-md">
         <flux:heading size="lg" class="mb-1">Nuevo año escolar</flux:heading>
-        <flux:subheading class="mb-4">El año actual quedará como inactivo.</flux:subheading>
+        <flux:subheading class="mb-4">El año actual quedará como inactivo. Si el año que escribes ya existe, se activará de nuevo en vez de crear uno duplicado.</flux:subheading>
 
         <div class="space-y-4">
             <flux:input

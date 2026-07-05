@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\AcademicYear;
 use App\Models\Classroom;
+use App\Models\Enrollment;
+use App\Models\Student;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -113,5 +115,71 @@ class InstitutionAcademicTest extends TestCase
 
         $this->assertSame(2, Classroom::where('academic_year_id', $yearNew->id)->count());
         $this->assertDatabaseHas('classrooms', ['academic_year_id' => $yearNew->id, 'grade_id' => $grade4->id, 'section' => 'B']);
+    }
+
+    public function test_el_boton_de_copiar_aulas_solo_aparece_si_el_anio_activo_no_tiene_ninguna(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $admin = $this->makeStaffUser('admin', $team);
+
+        $institution = $this->makeInstitution();
+        $grade = $this->makeGrade($institution);
+        $year = $this->makeActiveYear($institution);
+
+        Livewire::actingAs($admin)
+            ->test('pages::academic.index')
+            ->assertSee('Copiar aulas del año anterior');
+
+        $this->makeClassroom($grade, $year, 'A');
+
+        Livewire::actingAs($admin)
+            ->test('pages::academic.index')
+            ->assertDontSee('Copiar aulas del año anterior');
+    }
+
+    public function test_crear_un_anio_que_ya_existe_lo_reactiva_en_vez_de_duplicarlo(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $admin = $this->makeStaffUser('admin', $team);
+
+        $institution = $this->makeInstitution();
+        $grade = $this->makeGrade($institution);
+
+        $yearOld = $this->makeActiveYear($institution, 2026);
+        $classroom = $this->makeClassroom($grade, $yearOld, 'A');
+
+        $student = Student::create(['first_name' => 'Ana', 'last_name' => 'Pérez', 'birth_date' => '2018-01-01', 'sex' => 'F', 'address' => 'Calle 2']);
+        Enrollment::create([
+            'student_id' => $student->id, 'classroom_id' => $classroom->id, 'academic_year_id' => $yearOld->id,
+            'registered_by' => $admin->id, 'enrollment_date' => '2026-02-01', 'status' => 'activo', 'enrollment_type' => 'nuevo_ingreso',
+        ]);
+
+        // Simula haber creado "2027" y ahora querer "volver" a 2026 usando el
+        // mismo formulario de "Nuevo año" (el error real que motivó este fix).
+        $yearOld->update(['is_active' => false]);
+        $this->makeActiveYear($institution, 2027);
+
+        Livewire::actingAs($admin)
+            ->test('pages::academic.index')
+            ->set('newYear', 2026)
+            ->set('startDate', '2026-01-01')
+            ->set('endDate', '2026-12-31')
+            ->call('createYear')
+            ->assertHasNoErrors();
+
+        // Sigue existiendo un solo "2026", ahora activo, con su aula y su matrícula.
+        $this->assertSame(1, AcademicYear::where('year', 2026)->count());
+        $reactivated = AcademicYear::where('year', 2026)->first();
+        $this->assertTrue($reactivated->is_active);
+        $this->assertSame($yearOld->id, $reactivated->id);
+        $this->assertSame(1, Classroom::where('academic_year_id', $reactivated->id)->count());
+        $this->assertSame(1, Enrollment::where('academic_year_id', $reactivated->id)->where('status', 'activo')->count());
+
+        // El 2027 quedó inactivo, no se tocó.
+        $this->assertFalse(AcademicYear::where('year', 2027)->first()->is_active);
     }
 }
