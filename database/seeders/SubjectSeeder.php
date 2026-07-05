@@ -52,14 +52,14 @@ class SubjectSeeder extends Seeder
             $grade->subjects()->sync($basicaSubjectIds);
         }
 
-        // Preescolar (Pre-Kinder, Kinder): sus propias áreas + las especializadas
-        // que también aplican a esta edad (Inglés, Expresión Artística). La
-        // Educación Física de Básica General queda fuera — el área psicomotora
-        // de preescolar (Expresión Corporal y Psicomotricidad) ya la cubre, y
-        // Tecnologías tampoco aplica a esta edad.
+        // Preescolar (Pre-Kinder, Kinder): sus propias áreas + Expresión
+        // Artística. Ni Inglés ni Educación Física de Básica General aplican
+        // a esta edad — el área psicomotora de preescolar (Expresión
+        // Corporal y Psicomotricidad) ya cubre lo motriz, y Tecnologías
+        // tampoco aplica.
         $preescolarGrades = Grade::whereHas('educationLevel', fn ($q) => $q->where('name', 'Pre-Escolar'))->get();
         $preescolarSubjectIds = $allSubjects
-            ->whereIn('name', [...array_keys($preescolarSubjects), 'Inglés', 'Expresión Artística'])
+            ->whereIn('name', [...array_keys($preescolarSubjects), 'Expresión Artística'])
             ->pluck('id');
 
         foreach ($preescolarGrades as $grade) {
