@@ -125,6 +125,55 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
         unset($this->activeYear);
     }
 
+    public function copyClassroomsFromPreviousYear(): void
+    {
+        $this->authorize('academic.manage');
+
+        $year = AcademicYear::where('is_active', true)->first();
+
+        if (! $year) {
+            Flux::toast(variant: 'danger', text: 'No hay un año escolar activo.');
+
+            return;
+        }
+
+        $previousYear = AcademicYear::where('id', '!=', $year->id)
+            ->orderByDesc('year')
+            ->first();
+
+        if (! $previousYear) {
+            Flux::toast(variant: 'danger', text: 'No hay un año anterior del cual copiar aulas.');
+
+            return;
+        }
+
+        $existingKeys = Classroom::where('academic_year_id', $year->id)
+            ->get(['grade_id', 'section'])
+            ->map(fn ($c) => "{$c->grade_id}-{$c->section}");
+
+        $created = 0;
+
+        foreach (Classroom::where('academic_year_id', $previousYear->id)->get() as $classroom) {
+            if ($existingKeys->contains("{$classroom->grade_id}-{$classroom->section}")) {
+                continue;
+            }
+
+            Classroom::create([
+                'academic_year_id' => $year->id,
+                'grade_id' => $classroom->grade_id,
+                'section' => $classroom->section,
+                'shift' => $classroom->shift,
+                'capacity' => $classroom->capacity,
+            ]);
+
+            $created++;
+        }
+
+        unset($this->activeYear);
+
+        Flux::toast(variant: 'success', text: "{$created} aula(s) copiada(s) desde {$previousYear->year}.");
+    }
+
     public function deleteClassroom(int $id): void
     {
         $this->authorize('academic.manage');
@@ -300,9 +349,20 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
             </div>
             @can('academic.manage')
                 @if ($this->activeYear)
-                    <flux:modal.trigger name="add-classroom">
-                        <flux:button icon="plus" size="sm" variant="primary">Agregar aula</flux:button>
-                    </flux:modal.trigger>
+                    <div class="flex gap-2">
+                        <flux:button
+                            icon="document-duplicate"
+                            size="sm"
+                            variant="ghost"
+                            wire:click="copyClassroomsFromPreviousYear"
+                            wire:confirm="¿Copiar las aulas del año anterior a {{ $this->activeYear->year }}? Se omitirán las que ya existan (mismo grado y sección)."
+                        >
+                            Copiar aulas del año anterior
+                        </flux:button>
+                        <flux:modal.trigger name="add-classroom">
+                            <flux:button icon="plus" size="sm" variant="primary">Agregar aula</flux:button>
+                        </flux:modal.trigger>
+                    </div>
                 @endif
             @endcan
         </div>
