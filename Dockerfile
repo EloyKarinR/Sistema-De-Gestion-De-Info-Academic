@@ -1,5 +1,8 @@
 # ---- Etapa 1: compilar los assets de Vite (CSS/JS) ----
-FROM node:22-alpine AS assets
+# node:22-bookworm-slim (Debian/glibc) en vez de alpine (musl) porque el
+# proyecto fija binarios nativos de Rollup/Tailwind en su variante glibc
+# (@rollup/rollup-linux-x64-gnu) — en Alpine no cargan y el build truena.
+FROM node:22-bookworm-slim AS assets
 
 WORKDIR /app
 
