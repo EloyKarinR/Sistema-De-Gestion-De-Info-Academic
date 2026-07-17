@@ -1,25 +1,11 @@
-# ---- Etapa 1: compilar los assets de Vite (CSS/JS) ----
-# node:22-bookworm-slim (Debian/glibc) en vez de alpine (musl) porque el
-# proyecto fija binarios nativos de Rollup/Tailwind en su variante glibc
-# (@rollup/rollup-linux-x64-gnu) — en Alpine no cargan y el build truena.
-FROM node:22-bookworm-slim AS assets
+# Los assets de Vite (public/build) se compilan localmente y se commitean
+# al repo — el plan gratuito de Render no tiene memoria suficiente para
+# correr "npm run build" (Vite + Tailwind) durante el build de la imagen.
+# Para regenerarlos: npm run build && git add public/build
 
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-RUN npm ci
-
-COPY vite.config.js ./
-COPY resources ./resources
-COPY public ./public
-
-RUN npm run build
-
-# ---- Etapa 2: runtime (nginx + PHP-FPM) ----
 FROM richarvey/nginx-php-fpm:3.1.6
 
 COPY . .
-COPY --from=assets /app/public/build ./public/build
 
 RUN sed -i 's/\r$//' /var/www/html/scripts/*.sh && chmod +x /var/www/html/scripts/*.sh
 
