@@ -8,11 +8,15 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Rellena notas para las matrículas que no tienen ninguna todavía — el caso
- * típico es el roster masivo de estudiantes (StudentRosterSeeder), que se
- * siembra después de GradeScoreSeeder y por eso se queda sin notas. Genera
- * una nota por cada materia asignada a su aula y cada trimestre del año
- * activo, con valores aleatorios pero realistas (escala 1.0-5.0).
+ * Completa las notas que le falten a cualquier matrícula activa — ya sea
+ * porque nunca tuvo ninguna (el roster masivo de StudentRosterSeeder, que
+ * se siembra después de GradeScoreSeeder) o porque solo tenía algunas
+ * materias (los estudiantes originales de la demo, a los que GradeScoreSeeder
+ * solo les puso Inglés y/o las materias de la maestra de grado). Por cada
+ * materia asignada a su aula y cada trimestre del año activo que todavía no
+ * tenga nota, genera una con un valor aleatorio pero realista (escala
+ * 1.0-5.0). Es seguro correrlo varias veces — nunca duplica una nota que ya
+ * exista.
  */
 class GradeScoreBackfillSeeder extends Seeder
 {
@@ -32,8 +36,7 @@ class GradeScoreBackfillSeeder extends Seeder
 
         $enrollments = Enrollment::where('status', 'activo')
             ->where('academic_year_id', $activeYear->id)
-            ->whereDoesntHave('gradeScores')
-            ->with('classroom.subjectAssignments')
+            ->with('classroom.subjectAssignments', 'gradeScores')
             ->get();
 
         DB::transaction(function () use ($enrollments, $periods) {
@@ -41,8 +44,18 @@ class GradeScoreBackfillSeeder extends Seeder
             $now = now();
 
             foreach ($enrollments as $enrollment) {
+                $existing = $enrollment->gradeScores
+                    ->map(fn ($score) => $score->subject_id.'-'.$score->period_id)
+                    ->flip();
+
                 foreach ($enrollment->classroom->subjectAssignments as $assignment) {
                     foreach ($periods as $periodId) {
+                        $key = $assignment->subject_id.'-'.$periodId;
+
+                        if (isset($existing[$key])) {
+                            continue;
+                        }
+
                         $rows[] = [
                             'enrollment_id' => $enrollment->id,
                             'subject_id' => $assignment->subject_id,
