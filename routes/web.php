@@ -4,10 +4,6 @@ use App\Http\Controllers\ReportController;
 use App\Http\Middleware\EnsureTeamMembership;
 use Illuminate\Support\Facades\Route;
 
-// TEMPORAL: diagnóstico de headers de proxy — quitar después de confirmar
-// por qué X-Forwarded-Proto no llegaba a través de Caddy.
-Route::get('/debug-headers', [App\Http\Controllers\DebugHeadersController::class, '__invoke']);
-
 Route::view('/', 'welcome')->name('home');
 
 Route::prefix('{current_team}')
