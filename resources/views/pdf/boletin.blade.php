@@ -41,6 +41,10 @@
                 <td class="label">Nivel:</td>
                 <td>{{ $enrollment->classroom->grade->educationLevel->name }}</td>
             </tr>
+            <tr>
+                <td class="label">Maestro(a) de Grado:</td>
+                <td colspan="3">{{ $homeroomTeacher ?? '—' }}</td>
+            </tr>
         @endif
     </table>
 

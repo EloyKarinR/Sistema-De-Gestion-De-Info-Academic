@@ -7,6 +7,7 @@ use App\Models\Enrollment;
 use App\Models\GradeScore;
 use App\Models\Institution;
 use App\Models\Student;
+use App\Models\SubjectAssignment;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
@@ -35,6 +36,7 @@ class ReportController extends Controller
             'student' => $student,
             'enrollment' => $enrollment,
             'matrix' => $matrix,
+            'homeroomTeacher' => $enrollment ? $this->homeroomTeacher($enrollment) : null,
         ])->stream("boletin-{$student->id}.pdf");
     }
 
@@ -74,6 +76,22 @@ class ReportController extends Controller
             'classroom' => $classroom,
             'enrollments' => $enrollments,
         ])->stream("listado-{$classroom->id}.pdf");
+    }
+
+    /**
+     * El maestro de grado es quien tiene asignada alguna materia general
+     * (no especializada) en el aula — no hay una tabla dedicada de "asesor
+     * de aula" en uso todavía, así que se deriva de las asignaciones.
+     */
+    private function homeroomTeacher(Enrollment $enrollment): ?string
+    {
+        $assignment = SubjectAssignment::where('classroom_id', $enrollment->classroom_id)
+            ->where('academic_year_id', $enrollment->academic_year_id)
+            ->whereHas('subject', fn ($q) => $q->where('is_specialized', false))
+            ->with('teacher')
+            ->first();
+
+        return $assignment?->teacher?->full_name;
     }
 
     /**
