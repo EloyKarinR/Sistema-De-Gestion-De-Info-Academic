@@ -35,7 +35,7 @@ new #[Layout('layouts.app')] #[Title('Institución')] class extends Component
     #[Validate('nullable|string|max:255')]
     public string $director_name = '';
 
-    #[Validate('nullable|image|max:2048')]
+    #[Validate('nullable|image|max:8192')]
     public $logo = null;
 
     public function mount(): void

@@ -99,7 +99,7 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
     {
         $this->authorize('student.edit');
 
-        $this->validate(['photo' => 'required|image|max:2048']);
+        $this->validate(['photo' => 'required|image|max:8192']);
 
         $this->student->update(['photo' => $this->photo->store('students', 'public')]);
 

@@ -190,7 +190,7 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
             'birthDate' => 'required|date',
             'sex' => 'required|in:M,F',
             'address' => 'required|string|max:255',
-            'photo' => 'nullable|image|max:2048',
+            'photo' => 'nullable|image|max:8192',
             'cedulaSearch' => 'nullable|string|max:20|unique:students,cedula',
         ], [
             'cedulaSearch.unique' => 'Ya existe un estudiante con esa cédula — búscalo arriba en vez de registrarlo de nuevo.',
