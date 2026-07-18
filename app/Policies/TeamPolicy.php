@@ -25,11 +25,13 @@ class TeamPolicy
     }
 
     /**
-     * Determine whether the user can create models.
+     * SIGA es de una sola escuela por ahora — nadie debe poder crear una
+     * escuela/equipo nueva desde la app (esto venía habilitado sin
+     * restricción por defecto en el starter kit de Laravel).
      */
     public function create(User $user): bool
     {
-        return true;
+        return false;
     }
 
     /**

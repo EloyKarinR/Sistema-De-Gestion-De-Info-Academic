@@ -1,11 +1,13 @@
 <?php
 
 use App\Actions\Teams\CreateTeam;
+use App\Models\Team;
 use App\Rules\TeamName;
 use App\Support\UserTeam;
 use Flux\Flux;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -14,6 +16,8 @@ new #[Title('Teams')] class extends Component {
 
     public function createTeam(CreateTeam $createTeam): void
     {
+        Gate::authorize('create', Team::class);
+
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255', new TeamName],
         ]);
@@ -44,13 +48,15 @@ new #[Title('Teams')] class extends Component {
     <flux:heading class="sr-only">{{ __('Teams') }}</flux:heading>
 
     <x-pages::settings.layout :heading="__('Teams')" :subheading="__('Manage your teams and team memberships')">
-        <div class="flex items-center justify-end">
-            <flux:modal.trigger name="create-team">
-                <flux:button variant="primary" icon="plus" x-data="" x-on:click.prevent="$dispatch('open-modal', 'create-team')" data-test="teams-new-team-button">
-                    {{ __('New team') }}
-                </flux:button>
-            </flux:modal.trigger>
-        </div>
+        @can('create', Team::class)
+            <div class="flex items-center justify-end">
+                <flux:modal.trigger name="create-team">
+                    <flux:button variant="primary" icon="plus" x-data="" x-on:click.prevent="$dispatch('open-modal', 'create-team')" data-test="teams-new-team-button">
+                        {{ __('New team') }}
+                    </flux:button>
+                </flux:modal.trigger>
+            </div>
+        @endcan
 
         <div class="mt-6 space-y-3">
             @forelse ($this->teams as $team)

@@ -24,8 +24,10 @@ class TeamTest extends TestCase
         $response->assertOk();
     }
 
-    public function test_teams_can_be_created(): void
+    public function test_teams_cannot_be_created_from_the_ui(): void
     {
+        // SIGA es de una sola escuela — nadie debe poder crear una escuela
+        // nueva desde la app (ver App\Policies\TeamPolicy::create()).
         $user = User::factory()->create();
 
         $this->actingAs($user);
@@ -33,33 +35,26 @@ class TeamTest extends TestCase
         Livewire::test('pages::teams.index')
             ->set('name', 'Test Team')
             ->call('createTeam')
-            ->assertHasNoErrors();
+            ->assertForbidden();
 
-        $this->assertDatabaseHas('teams', [
+        $this->assertDatabaseMissing('teams', [
             'name' => 'Test Team',
-            'is_personal' => false,
         ]);
     }
 
     public function test_team_slug_uses_next_available_suffix(): void
     {
-        $user = User::factory()->create();
-
+        // La lógica de sufijos del slug se prueba directo sobre la acción,
+        // ya que crear equipos desde la UI está bloqueado a propósito.
         Team::factory()->create(['name' => 'Acme', 'slug' => 'acme']);
         Team::factory()->create(['name' => 'Acme One', 'slug' => 'acme-1']);
         Team::factory()->create(['name' => 'Acme Ten', 'slug' => 'acme-10']);
 
-        $this->actingAs($user);
+        $user = User::factory()->create();
 
-        Livewire::test('pages::teams.index')
-            ->set('name', 'Acme')
-            ->call('createTeam')
-            ->assertHasNoErrors();
+        $team = app(\App\Actions\Teams\CreateTeam::class)->handle($user, 'Acme');
 
-        $this->assertDatabaseHas('teams', [
-            'name' => 'Acme',
-            'slug' => 'acme-11',
-        ]);
+        $this->assertSame('acme-11', $team->slug);
     }
 
     public function test_team_edit_page_can_be_rendered(): void

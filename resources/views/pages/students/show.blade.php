@@ -24,6 +24,26 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
 
     public $photo = null;
 
+    public string $editStudentFirstName = '';
+
+    public string $editStudentLastName = '';
+
+    public string $editStudentCedula = '';
+
+    public string $editStudentBirthDate = '';
+
+    public string $editStudentSex = 'M';
+
+    public string $editStudentAddress = '';
+
+    public string $editStudentBirthPlace = '';
+
+    public string $editStudentBloodType = '';
+
+    public string $editStudentMedicalConditions = '';
+
+    public string $editStudentPreviousSchool = '';
+
     public ?int $editGuardianId = null;
 
     public string $editFirstName = '';
@@ -87,6 +107,58 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
 
         Flux::modal('update-photo')->close();
         Flux::toast(variant: 'success', text: 'Foto actualizada correctamente.');
+    }
+
+    public function openEditStudentModal(): void
+    {
+        $this->authorize('student.edit');
+
+        $this->editStudentFirstName = $this->student->first_name;
+        $this->editStudentLastName = $this->student->last_name;
+        $this->editStudentCedula = $this->student->cedula ?? '';
+        $this->editStudentBirthDate = $this->student->birth_date?->format('Y-m-d') ?? '';
+        $this->editStudentSex = $this->student->sex;
+        $this->editStudentAddress = $this->student->address ?? '';
+        $this->editStudentBirthPlace = $this->student->birth_place ?? '';
+        $this->editStudentBloodType = $this->student->blood_type ?? '';
+        $this->editStudentMedicalConditions = $this->student->medical_conditions ?? '';
+        $this->editStudentPreviousSchool = $this->student->previous_school ?? '';
+
+        Flux::modal('edit-student')->show();
+    }
+
+    public function updateStudent(): void
+    {
+        $this->authorize('student.edit');
+
+        $this->validate([
+            'editStudentFirstName' => 'required|string|max:100',
+            'editStudentLastName' => 'required|string|max:100',
+            'editStudentCedula' => 'nullable|string|max:20|unique:students,cedula,'.$this->student->id,
+            'editStudentBirthDate' => 'required|date',
+            'editStudentSex' => 'required|in:M,F',
+            'editStudentAddress' => 'required|string|max:255',
+            'editStudentBirthPlace' => 'nullable|string|max:255',
+            'editStudentBloodType' => 'nullable|string|max:10',
+            'editStudentMedicalConditions' => 'nullable|string|max:500',
+            'editStudentPreviousSchool' => 'nullable|string|max:255',
+        ]);
+
+        $this->student->update([
+            'first_name' => $this->editStudentFirstName,
+            'last_name' => $this->editStudentLastName,
+            'cedula' => $this->editStudentCedula ?: null,
+            'birth_date' => $this->editStudentBirthDate,
+            'sex' => $this->editStudentSex,
+            'address' => $this->editStudentAddress,
+            'birth_place' => $this->editStudentBirthPlace ?: null,
+            'blood_type' => $this->editStudentBloodType ?: null,
+            'medical_conditions' => $this->editStudentMedicalConditions ?: null,
+            'previous_school' => $this->editStudentPreviousSchool ?: null,
+        ]);
+
+        Flux::modal('edit-student')->close();
+        Flux::toast(variant: 'success', text: 'Datos del estudiante actualizados.');
     }
 
     public function openEditModal(int $guardianId): void
@@ -224,7 +296,19 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
 
             {{-- Datos personales --}}
             <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-4">
-                <flux:heading size="lg">Datos personales</flux:heading>
+                <div class="flex items-center justify-between">
+                    <flux:heading size="lg">Datos personales</flux:heading>
+                    @can('student.edit')
+                        <flux:button
+                            size="sm"
+                            variant="ghost"
+                            icon="pencil-square"
+                            wire:click="openEditStudentModal"
+                        >
+                            Editar
+                        </flux:button>
+                    @endcan
+                </div>
 
                 <dl class="space-y-3 text-sm">
                     <div class="flex justify-between">
@@ -492,6 +576,56 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
             @endif
         </div>
     @endif
+
+    {{-- Modal: Editar estudiante --}}
+    <flux:modal name="edit-student" class="max-w-md">
+        <flux:heading size="lg" class="mb-4">Editar estudiante</flux:heading>
+
+        <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <flux:input wire:model="editStudentFirstName" label="Nombre(s)" required />
+                @error('editStudentFirstName') <flux:error>{{ $message }}</flux:error> @enderror
+
+                <flux:input wire:model="editStudentLastName" label="Apellidos" required />
+                @error('editStudentLastName') <flux:error>{{ $message }}</flux:error> @enderror
+            </div>
+
+            <flux:input wire:model="editStudentCedula" label="Cédula" />
+            @error('editStudentCedula') <flux:error>{{ $message }}</flux:error> @enderror
+
+            <div class="grid grid-cols-2 gap-4">
+                <flux:input wire:model="editStudentBirthDate" label="Fecha de nacimiento" type="date" required />
+                @error('editStudentBirthDate') <flux:error>{{ $message }}</flux:error> @enderror
+
+                <flux:select wire:model="editStudentSex" label="Sexo">
+                    <flux:select.option value="M">Masculino</flux:select.option>
+                    <flux:select.option value="F">Femenino</flux:select.option>
+                </flux:select>
+            </div>
+
+            <flux:input wire:model="editStudentAddress" label="Dirección" required />
+            @error('editStudentAddress') <flux:error>{{ $message }}</flux:error> @enderror
+
+            <div class="grid grid-cols-2 gap-4">
+                <flux:input wire:model="editStudentBirthPlace" label="Lugar de nacimiento" />
+                <flux:input wire:model="editStudentBloodType" label="Tipo de sangre" placeholder="O+" />
+            </div>
+
+            <flux:input wire:model="editStudentPreviousSchool" label="Escuela anterior" />
+
+            <flux:textarea wire:model="editStudentMedicalConditions" label="Condiciones médicas / alergias" rows="2" />
+            @error('editStudentMedicalConditions') <flux:error>{{ $message }}</flux:error> @enderror
+        </div>
+
+        <div class="mt-6 flex justify-end gap-2">
+            <flux:modal.close>
+                <flux:button variant="ghost">Cancelar</flux:button>
+            </flux:modal.close>
+            <flux:button variant="primary" wire:click="updateStudent" wire:loading.attr="disabled">
+                Guardar cambios
+            </flux:button>
+        </div>
+    </flux:modal>
 
     {{-- Modal: Editar acudiente --}}
     <flux:modal name="edit-guardian" class="max-w-md">

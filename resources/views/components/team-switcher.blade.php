@@ -7,6 +7,7 @@ use App\Support\UserTeam;
 use Flux\Flux;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
 
 new class extends Component {
@@ -33,6 +34,8 @@ new class extends Component {
 
     public function createTeam(CreateTeam $createTeam): void
     {
+        Gate::authorize('create', Team::class);
+
         $validated = $this->validate([
             'teamName' => ['required', 'string', 'max:255', new TeamName],
         ]);
@@ -130,13 +133,15 @@ new class extends Component {
                 </flux:menu.item>
             @endforeach
 
-            <flux:menu.separator />
+            @can('create', Team::class)
+                <flux:menu.separator />
 
-            <flux:modal.trigger name="create-team-switcher">
-                <flux:menu.item icon="plus" class="cursor-pointer" data-test="team-switcher-new-team">
-                    {{ __('New team') }}
-                </flux:menu.item>
-            </flux:modal.trigger>
+                <flux:modal.trigger name="create-team-switcher">
+                    <flux:menu.item icon="plus" class="cursor-pointer" data-test="team-switcher-new-team">
+                        {{ __('New team') }}
+                    </flux:menu.item>
+                </flux:modal.trigger>
+            @endcan
         </flux:menu>
     </flux:dropdown>
 
