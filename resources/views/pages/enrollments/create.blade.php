@@ -191,6 +191,9 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
             'sex' => 'required|in:M,F',
             'address' => 'required|string|max:255',
             'photo' => 'nullable|image|max:2048',
+            'cedulaSearch' => 'nullable|string|max:20|unique:students,cedula',
+        ], [
+            'cedulaSearch.unique' => 'Ya existe un estudiante con esa cédula — búscalo arriba en vez de registrarlo de nuevo.',
         ]);
 
         $student = Student::create([
@@ -252,7 +255,9 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
             'guardianLastName' => 'required|string|max:100',
             'relationship' => 'required|in:padre,madre,abuelo,abuela,tio,tia,hermano,hermana,tutor,otro',
             'primaryPhone' => 'required|string|max:20',
-            'guardianCedula' => 'nullable|string|max:20',
+            'guardianCedula' => 'nullable|string|max:20|unique:guardians,cedula',
+        ], [
+            'guardianCedula.unique' => 'Ya existe un acudiente con esa cédula — dale "Buscar" arriba para usarlo en vez de crear uno nuevo.',
         ]);
 
         $guardian = Guardian::create([
