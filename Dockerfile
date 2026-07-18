@@ -3,7 +3,7 @@
 # correr "npm run build" (Vite + Tailwind) durante el build de la imagen.
 # Para regenerarlos: npm run build && git add public/build
 
-FROM php:8.3-cli-bookworm
+FROM php:8.4-cli-bookworm
 
 RUN apt-get update && apt-get install -y \
         libpq-dev libzip-dev libpng-dev libjpeg-dev libfreetype6-dev libicu-dev \
