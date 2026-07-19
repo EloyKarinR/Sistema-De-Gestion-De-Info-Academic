@@ -114,4 +114,60 @@ class StudentsIndexTest extends TestCase
             ->assertSee('Ana Pérez')
             ->assertSee('Beto Gómez');
     }
+
+    public function test_secretaria_puede_eliminar_a_un_estudiante_sin_matriculas(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $secretaria = $this->makeStaffUser('secretaria', $team);
+
+        $student = Student::create(['first_name' => 'Ana', 'last_name' => 'Pérez', 'birth_date' => '2018-01-01', 'sex' => 'F', 'address' => 'Calle 2']);
+
+        Livewire::actingAs($secretaria)
+            ->test('pages::students.index')
+            ->call('deleteStudent', $student->id)
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseMissing('students', ['id' => $student->id]);
+    }
+
+    public function test_no_se_puede_eliminar_a_un_estudiante_con_matriculas(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $secretaria = $this->makeStaffUser('secretaria', $team);
+
+        $institution = $this->makeInstitution();
+        $grade = $this->makeGrade($institution);
+        $year = $this->makeActiveYear($institution);
+        $classroom = $this->makeClassroom($grade, $year);
+
+        $student = Student::create(['first_name' => 'Ana', 'last_name' => 'Pérez', 'birth_date' => '2018-01-01', 'sex' => 'F', 'address' => 'Calle 2']);
+        Enrollment::create(['student_id' => $student->id, 'classroom_id' => $classroom->id, 'academic_year_id' => $year->id, 'registered_by' => $secretaria->id, 'enrollment_date' => '2026-02-01', 'status' => 'activo', 'enrollment_type' => 'nuevo_ingreso']);
+
+        Livewire::actingAs($secretaria)
+            ->test('pages::students.index')
+            ->call('deleteStudent', $student->id);
+
+        $this->assertDatabaseHas('students', ['id' => $student->id]);
+    }
+
+    public function test_docente_no_puede_eliminar_estudiantes(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $docenteUser = $this->makeStaffUser('docente', $team);
+
+        $student = Student::create(['first_name' => 'Ana', 'last_name' => 'Pérez', 'birth_date' => '2018-01-01', 'sex' => 'F', 'address' => 'Calle 2']);
+
+        Livewire::actingAs($docenteUser)
+            ->test('pages::students.index')
+            ->call('deleteStudent', $student->id)
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('students', ['id' => $student->id]);
+    }
 }

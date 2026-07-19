@@ -24,7 +24,7 @@ class RoleSeeder extends Seeder
             'enrollment.view', 'enrollment.create', 'enrollment.edit', 'enrollment.delete',
 
             // Estudiantes y acudientes
-            'student.view', 'student.create', 'student.edit',
+            'student.view', 'student.create', 'student.edit', 'student.delete',
             'guardian.view', 'guardian.create', 'guardian.edit',
 
             // Pagos
@@ -65,7 +65,7 @@ class RoleSeeder extends Seeder
             'institution.view',
             'academic.view',
             'enrollment.view', 'enrollment.create', 'enrollment.edit',
-            'student.view', 'student.create', 'student.edit',
+            'student.view', 'student.create', 'student.edit', 'student.delete',
             'guardian.view', 'guardian.create', 'guardian.edit',
             'payment.view', 'payment.create',
             'teacher.view',

@@ -161,6 +161,23 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
         Flux::toast(variant: 'success', text: 'Datos del estudiante actualizados.');
     }
 
+    public function deleteStudent()
+    {
+        $this->authorize('student.delete');
+
+        if ($this->student->enrollments()->count() > 0) {
+            Flux::toast(variant: 'danger', text: 'No se puede eliminar un estudiante que ya tiene matrículas registradas.');
+
+            return;
+        }
+
+        $this->student->delete();
+
+        Flux::toast(variant: 'success', text: 'Estudiante eliminado.');
+
+        return $this->redirect(route('students.index'), navigate: true);
+    }
+
     public function openEditModal(int $guardianId): void
     {
         $this->authorize('guardian.edit');
@@ -262,31 +279,46 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
 <div class="flex h-full w-full flex-1 flex-col gap-6">
 
     {{-- Encabezado --}}
-    <div class="flex items-center gap-3">
-        <flux:button
-            icon="arrow-left"
-            variant="ghost"
-            size="sm"
-            :href="route('students.index')"
-            wire:navigate
-        />
-        <div class="relative shrink-0">
-            <x-avatar-initials :initials="$student->initials" :photo="$student->photo" size="size-14" text="text-lg" />
-            @can('student.edit')
-                <flux:modal.trigger name="update-photo">
-                    <button
-                        type="button"
-                        class="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-2 border-white dark:border-zinc-900"
-                    >
-                        <flux:icon name="camera" class="size-3.5" />
-                    </button>
-                </flux:modal.trigger>
-            @endcan
+    <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-3">
+            <flux:button
+                icon="arrow-left"
+                variant="ghost"
+                size="sm"
+                :href="route('students.index')"
+                wire:navigate
+            />
+            <div class="relative shrink-0">
+                <x-avatar-initials :initials="$student->initials" :photo="$student->photo" size="size-14" text="text-lg" />
+                @can('student.edit')
+                    <flux:modal.trigger name="update-photo">
+                        <button
+                            type="button"
+                            class="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-2 border-white dark:border-zinc-900"
+                        >
+                            <flux:icon name="camera" class="size-3.5" />
+                        </button>
+                    </flux:modal.trigger>
+                @endcan
+            </div>
+            <div>
+                <flux:heading size="xl">{{ $student->full_name }}</flux:heading>
+                <flux:subheading>Ficha del estudiante</flux:subheading>
+            </div>
         </div>
-        <div>
-            <flux:heading size="xl">{{ $student->full_name }}</flux:heading>
-            <flux:subheading>Ficha del estudiante</flux:subheading>
-        </div>
+        @can('student.delete')
+            @if ($student->enrollments->isEmpty())
+                <flux:button
+                    icon="trash"
+                    variant="danger"
+                    size="sm"
+                    wire:click="deleteStudent"
+                    wire:confirm="¿Eliminar a {{ $student->full_name }}? No tiene ninguna matrícula registrada."
+                >
+                    Eliminar estudiante
+                </flux:button>
+            @endif
+        @endcan
     </div>
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">

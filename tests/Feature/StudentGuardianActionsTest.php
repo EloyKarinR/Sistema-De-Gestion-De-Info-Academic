@@ -62,4 +62,22 @@ class StudentGuardianActionsTest extends TestCase
             ->call('openEditModal', $guardian->id)
             ->assertForbidden();
     }
+
+    public function test_secretaria_puede_eliminar_un_estudiante_sin_matriculas_desde_su_ficha(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $secretaria = $this->makeStaffUser('secretaria', $team);
+
+        $student = Student::create(['first_name' => 'Ana', 'last_name' => 'Pérez', 'birth_date' => '2018-01-01', 'sex' => 'F', 'address' => 'Calle 2']);
+
+        Livewire::actingAs($secretaria)
+            ->test('pages::students.show', ['student' => $student])
+            ->assertSee('Eliminar estudiante')
+            ->call('deleteStudent')
+            ->assertRedirect(route('students.index'));
+
+        $this->assertDatabaseMissing('students', ['id' => $student->id]);
+    }
 }

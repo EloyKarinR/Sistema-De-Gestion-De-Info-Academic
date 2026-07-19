@@ -6,6 +6,7 @@ use App\Models\Classroom;
 use App\Models\Student;
 use App\Models\SubjectAssignment;
 use App\Models\Teacher;
+use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -40,6 +41,24 @@ new #[Layout('layouts.app')] #[Title('Estudiantes')] class extends Component
     public function updatedShiftFilter(): void
     {
         $this->resetPage();
+    }
+
+    public function deleteStudent(int $studentId): void
+    {
+        $this->authorize('student.delete');
+
+        $student = Student::withCount('enrollments')->findOrFail($studentId);
+
+        if ($student->enrollments_count > 0) {
+            Flux::toast(variant: 'danger', text: 'No se puede eliminar un estudiante que ya tiene matrículas registradas.');
+
+            return;
+        }
+
+        $student->delete();
+
+        unset($this->students);
+        Flux::toast(variant: 'success', text: 'Estudiante eliminado.');
     }
 
     #[Computed]
@@ -106,6 +125,7 @@ new #[Layout('layouts.app')] #[Title('Estudiantes')] class extends Component
             ->when($this->classroomId, fn ($q) => $q->where('enrollments.classroom_id', $this->classroomId))
             ->when($this->shiftFilter, fn ($q) => $q->where('classrooms.shift', $this->shiftFilter))
             ->when($this->myClassroomIds !== null, fn ($q) => $q->whereIn('enrollments.classroom_id', $this->myClassroomIds))
+            ->withCount('enrollments')
             ->with([
                 'activeEnrollment.classroom.grade',
                 'guardians' => fn ($q) => $q->wherePivot('is_primary', true),
@@ -194,13 +214,26 @@ new #[Layout('layouts.app')] #[Title('Estudiantes')] class extends Component
                             @endif
                         </flux:table.cell>
                         <flux:table.cell>
-                            <flux:button
-                                size="sm"
-                                variant="ghost"
-                                icon="eye"
-                                :href="route('students.show', $student)"
-                                wire:navigate
-                            />
+                            <div class="flex gap-2">
+                                <flux:button
+                                    size="sm"
+                                    variant="ghost"
+                                    icon="eye"
+                                    :href="route('students.show', $student)"
+                                    wire:navigate
+                                />
+                                @can('student.delete')
+                                    @if ($student->enrollments_count === 0)
+                                        <flux:button
+                                            size="sm"
+                                            variant="ghost"
+                                            icon="trash"
+                                            wire:click="deleteStudent({{ $student->id }})"
+                                            wire:confirm="¿Eliminar a {{ $student->full_name }}? No tiene ninguna matrícula registrada."
+                                        />
+                                    @endif
+                                @endcan
+                            </div>
                         </flux:table.cell>
                     </flux:table.row>
                 @endforeach
