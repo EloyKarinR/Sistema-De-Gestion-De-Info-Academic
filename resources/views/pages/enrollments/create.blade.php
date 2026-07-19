@@ -431,7 +431,7 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
                             <x-avatar-initials :initials="$this->foundStudent->initials" :photo="$this->foundStudent->photo" />
                             <span class="font-medium">{{ $this->foundStudent->full_name }}</span>
                         </div>
-                        <dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+                        <dl class="grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
                             <div class="flex justify-between">
                                 <dt class="text-zinc-500">Cédula</dt>
                                 <dd>{{ $this->foundStudent->cedula ?? '—' }}</dd>
@@ -521,7 +521,7 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
                                 <x-avatar-initials :initials="$existingGuardian->initials" />
                                 <span class="font-medium">{{ $existingGuardian->full_name }}</span>
                             </div>
-                            <dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+                            <dl class="grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
                                 <div class="flex justify-between">
                                     <dt class="text-zinc-500">Parentesco</dt>
                                     <dd class="capitalize">{{ $existingGuardian->relationship }}</dd>
@@ -686,8 +686,8 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
                         <flux:badge color="green" size="lg">{{ $r->academicYear->year }}</flux:badge>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
-                        <div class="col-span-2 flex items-center gap-2 mb-1">
+                    <div class="grid grid-cols-1 gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+                        <div class="sm:col-span-2 flex items-center gap-2 mb-1">
                             <x-avatar-initials :initials="$r->student->initials" :photo="$r->student->photo" size="size-7" />
                             <span class="font-medium text-zinc-700 dark:text-zinc-300">Estudiante</span>
                         </div>
@@ -701,8 +701,8 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
                     </div>
 
                     @if ($guardian)
-                        <div class="grid grid-cols-2 gap-x-8 gap-y-2 text-sm border-t border-zinc-100 dark:border-zinc-700 pt-4">
-                            <div class="col-span-2 font-medium text-zinc-700 dark:text-zinc-300 mb-1">Acudiente</div>
+                        <div class="grid grid-cols-1 gap-x-8 gap-y-2 text-sm sm:grid-cols-2 border-t border-zinc-100 dark:border-zinc-700 pt-4">
+                            <div class="sm:col-span-2 font-medium text-zinc-700 dark:text-zinc-300 mb-1">Acudiente</div>
                             <div class="flex justify-between"><span class="text-zinc-500">Nombre</span><span class="font-medium">{{ $guardian->full_name }}</span></div>
                             <div class="flex justify-between"><span class="text-zinc-500">Parentesco</span><span class="capitalize">{{ $guardian->relationship }}</span></div>
                             <div class="flex justify-between"><span class="text-zinc-500">Teléfono</span><span>{{ $guardian->primary_phone }}</span></div>

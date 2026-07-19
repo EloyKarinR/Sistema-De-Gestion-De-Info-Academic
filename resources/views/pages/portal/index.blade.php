@@ -224,7 +224,7 @@ new #[Layout('layouts.app')] #[Title('Mi Portal')] class extends Component
                         $timeSlots = $this->scheduleByDay->flatten(1)->unique(fn ($s) => $s->start_time->format('H:i'))->sortBy('start_time');
                     @endphp
                     <div class="overflow-x-auto">
-                        <table class="w-full text-sm border-collapse">
+                        <table class="w-full min-w-[640px] text-sm border-collapse">
                             <thead>
                                 <tr>
                                     <th class="text-left text-zinc-500 font-medium p-2 border-b border-zinc-200 dark:border-zinc-700">Hora</th>

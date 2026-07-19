@@ -460,7 +460,7 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
                             </flux:badge>
                         </div>
 
-                        <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                        <dl class="grid grid-cols-1 gap-x-4 gap-y-1 text-sm sm:grid-cols-2">
                             <div class="flex justify-between col-span-1">
                                 <dt class="text-zinc-500">Fecha</dt>
                                 <dd>{{ $enrollment->enrollment_date->format('d/m/Y') }}</dd>
@@ -539,7 +539,7 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
                     $timeSlots = $this->scheduleByDay->flatten(1)->unique(fn ($s) => $s->start_time->format('H:i'))->sortBy('start_time');
                 @endphp
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm border-collapse">
+                    <table class="w-full min-w-[640px] text-sm border-collapse">
                         <thead>
                             <tr>
                                 <th class="text-left text-zinc-500 font-medium p-2 border-b border-zinc-200 dark:border-zinc-700">Hora</th>
