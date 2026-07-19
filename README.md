@@ -90,11 +90,6 @@ Funciona igual de bien desde una laptop que desde el celular de un padre de fami
 
 ## 📸 Capturas de pantalla
 
-<!--
-  Instrucciones: reemplaza cada imagen en docs/screenshots/ con una captura real
-  (mismo nombre de archivo) y esta sección se actualiza sola, sin tocar el markdown.
--->
-
 <table>
   <tr>
     <td width="50%">
