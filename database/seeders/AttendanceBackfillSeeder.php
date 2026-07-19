@@ -13,8 +13,10 @@ use Illuminate\Support\Facades\DB;
 /**
  * Genera ausencias y tardanzas variadas y realistas para cada matrícula
  * activa, solo dentro de los trimestres que ya comenzaron — nunca inventa
- * asistencia para un trimestre futuro. Es seguro correrlo varias veces:
- * nunca duplica un (matrícula, fecha, tipo) que ya exista.
+ * asistencia para un trimestre futuro. Es seguro correrlo varias veces: si
+ * una matrícula ya tiene algún registro de asistencia en un trimestre, ese
+ * trimestre no se vuelve a tocar (evita que cada corrida sume más
+ * ausencias/tardanzas encima de las que ya había).
  */
 class AttendanceBackfillSeeder extends Seeder
 {
@@ -57,6 +59,14 @@ class AttendanceBackfillSeeder extends Seeder
                     ->flip();
 
                 foreach ($periods as $period) {
+                    $alreadySeeded = $enrollment->attendance->contains(
+                        fn ($record) => $record->date->between($period->start_date, $period->end_date)
+                    );
+
+                    if ($alreadySeeded) {
+                        continue;
+                    }
+
                     $rangeEnd = $period->end_date->min($today);
                     $weekdays = $this->weekdaysBetween($period->start_date, $rangeEnd)->shuffle();
 
@@ -74,14 +84,14 @@ class AttendanceBackfillSeeder extends Seeder
                             continue;
                         }
 
-                        $justified = fake()->boolean(35);
+                        $justified = $this->chance(35);
 
                         $rows[] = [
                             'enrollment_id' => $enrollment->id,
                             'date' => $date->format('Y-m-d'),
                             'type' => 'ausencia',
                             'justified' => $justified,
-                            'reason' => $justified ? fake()->randomElement(self::JUSTIFIED_ABSENCE_REASONS) : null,
+                            'reason' => $justified ? $this->randomReason(self::JUSTIFIED_ABSENCE_REASONS) : null,
                             'created_at' => $now,
                             'updated_at' => $now,
                         ];
@@ -94,14 +104,14 @@ class AttendanceBackfillSeeder extends Seeder
                             continue;
                         }
 
-                        $justified = fake()->boolean(30);
+                        $justified = $this->chance(30);
 
                         $rows[] = [
                             'enrollment_id' => $enrollment->id,
                             'date' => $date->format('Y-m-d'),
                             'type' => 'tardanza',
                             'justified' => $justified,
-                            'reason' => $justified ? fake()->randomElement(self::JUSTIFIED_TARDINESS_REASONS) : null,
+                            'reason' => $justified ? $this->randomReason(self::JUSTIFIED_TARDINESS_REASONS) : null,
                             'created_at' => $now,
                             'updated_at' => $now,
                         ];
@@ -151,5 +161,18 @@ class AttendanceBackfillSeeder extends Seeder
         $weighted = [0, 0, 1, 1, 1, 2, 2, 3, 4];
 
         return $weighted[array_rand($weighted)];
+    }
+
+    private function chance(int $percent): bool
+    {
+        return random_int(1, 100) <= $percent;
+    }
+
+    /**
+     * @param  array<int, string>  $reasons
+     */
+    private function randomReason(array $reasons): string
+    {
+        return $reasons[array_rand($reasons)];
     }
 }
