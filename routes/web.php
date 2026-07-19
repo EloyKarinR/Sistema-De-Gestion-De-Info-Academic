@@ -1,10 +1,14 @@
 <?php
 
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SessionCheckController;
 use App\Http\Middleware\EnsureTeamMembership;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
+
+// Sin middleware "auth" a propósito — ver SessionCheckController.
+Route::get('/session-check', SessionCheckController::class)->name('session-check');
 
 Route::prefix('{current_team}')
     ->middleware(['auth', 'verified', EnsureTeamMembership::class])

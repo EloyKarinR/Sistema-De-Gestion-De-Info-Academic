@@ -159,6 +159,36 @@
             </flux:toast.group>
         @endpersist
 
+        {{-- Detecta casi al instante si otro dispositivo inició sesión con esta cuenta --}}
+        @persist('session-guard')
+            <div
+                x-data="{ kicked: false }"
+                x-init="setInterval(() => {
+                    fetch('{{ route('session-check') }}', { headers: { 'Accept': 'application/json' } })
+                        .then(r => r.json())
+                        .then(data => { if (! data.authenticated) kicked = true })
+                        .catch(() => {})
+                }, 5000)"
+            >
+                <div
+                    x-show="kicked"
+                    x-cloak
+                    class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4"
+                >
+                    <div class="w-full max-w-sm space-y-4 rounded-xl bg-white p-6 text-center shadow-xl dark:bg-zinc-900">
+                        <flux:icon name="device-phone-mobile" class="mx-auto size-10 text-amber-500" />
+                        <flux:heading size="lg">Sesión iniciada en otro dispositivo</flux:heading>
+                        <flux:text class="text-zinc-500">
+                            Se inició sesión con tu cuenta desde otro dispositivo o navegador, así que esta sesión se cerró.
+                        </flux:text>
+                        <flux:button variant="primary" onclick="window.location.href = '{{ route('login') }}'" class="w-full">
+                            Ir a iniciar sesión
+                        </flux:button>
+                    </div>
+                </div>
+            </div>
+        @endpersist
+
         @fluxScripts
     </body>
 </html>

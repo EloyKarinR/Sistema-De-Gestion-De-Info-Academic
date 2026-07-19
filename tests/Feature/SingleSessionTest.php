@@ -56,4 +56,12 @@ class SingleSessionTest extends TestCase
 
         $this->assertDatabaseMissing('sessions', ['id' => 'session-vieja-de-otro-dispositivo']);
     }
+
+    public function test_session_check_reporta_si_hay_sesion_autenticada(): void
+    {
+        $this->getJson(route('session-check'))->assertJson(['authenticated' => false]);
+
+        $user = User::factory()->create();
+        $this->actingAs($user)->getJson(route('session-check'))->assertJson(['authenticated' => true]);
+    }
 }
