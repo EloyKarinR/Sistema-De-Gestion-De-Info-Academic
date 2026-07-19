@@ -75,6 +75,33 @@
         </table>
     @endif
 
+    @if ($enrollment)
+        <table class="grades" style="margin-top: 16px;">
+            <thead>
+                <tr>
+                    <th>Asistencia</th>
+                    @foreach ($enrollment->academicYear->periods as $period)
+                        <th>{{ $period->name }}</th>
+                    @endforeach
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Ausencias</td>
+                    @foreach ($enrollment->academicYear->periods as $period)
+                        <td class="score">{{ $attendance[$period->id]['ausencias'] ?? 0 }}</td>
+                    @endforeach
+                </tr>
+                <tr>
+                    <td>Tardanzas</td>
+                    @foreach ($enrollment->academicYear->periods as $period)
+                        <td class="score">{{ $attendance[$period->id]['tardanzas'] ?? 0 }}</td>
+                    @endforeach
+                </tr>
+            </tbody>
+        </table>
+    @endif
+
     <div class="footer">
         Emitido el {{ now()->format('d/m/Y H:i') }}
     </div>

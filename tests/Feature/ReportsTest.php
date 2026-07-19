@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Attendance;
 use App\Models\Enrollment;
 use App\Models\Student;
 use App\Models\SubjectAssignment;
@@ -81,6 +82,38 @@ class ReportsTest extends TestCase
         $boletin = $this->actingAs($admin)->get(route('reports.boletin', $student));
         $boletin->assertOk();
         $this->assertStringContainsString('Rosa Jim', $this->extractPdfText($boletin->getContent()));
+    }
+
+    public function test_boletin_muestra_el_resumen_de_asistencia_por_trimestre(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $admin = $this->makeStaffUser('admin', $team);
+
+        $institution = $this->makeInstitution();
+        $grade = $this->makeGrade($institution);
+        $year = $this->makeActiveYear($institution);
+        $classroom = $this->makeClassroom($grade, $year);
+
+        $student = Student::create(['first_name' => 'Ana', 'last_name' => 'Pérez', 'birth_date' => '2018-01-01', 'sex' => 'F', 'address' => 'Calle 2']);
+        $enrollment = Enrollment::create([
+            'student_id' => $student->id, 'classroom_id' => $classroom->id, 'academic_year_id' => $year->id,
+            'registered_by' => $admin->id, 'enrollment_date' => '2026-02-01', 'status' => 'activo', 'enrollment_type' => 'nuevo_ingreso',
+        ]);
+
+        // Dos ausencias y una tardanza dentro del I Trimestre (2026-02-01 a 2026-05-01).
+        Attendance::create(['enrollment_id' => $enrollment->id, 'date' => '2026-02-10', 'type' => 'ausencia']);
+        Attendance::create(['enrollment_id' => $enrollment->id, 'date' => '2026-02-17', 'type' => 'ausencia']);
+        Attendance::create(['enrollment_id' => $enrollment->id, 'date' => '2026-02-11', 'type' => 'tardanza']);
+
+        $boletin = $this->actingAs($admin)->get(route('reports.boletin', $student));
+        $boletin->assertOk();
+
+        $text = $this->extractPdfText($boletin->getContent());
+        $this->assertStringContainsString('Asistencia', $text);
+        $this->assertStringContainsString('Ausencias', $text);
+        $this->assertStringContainsString('Tardanzas', $text);
     }
 
     /**

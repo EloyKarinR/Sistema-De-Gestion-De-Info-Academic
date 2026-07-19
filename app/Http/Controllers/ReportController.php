@@ -17,7 +17,7 @@ class ReportController extends Controller
     public function boletin(Student $student): Response
     {
         $enrollment = $student->activeEnrollment()
-            ->with(['classroom.grade.educationLevel', 'academicYear.periods'])
+            ->with(['classroom.grade.educationLevel', 'academicYear.periods', 'attendance'])
             ->first();
 
         $matrix = [];
@@ -37,6 +37,7 @@ class ReportController extends Controller
             'enrollment' => $enrollment,
             'matrix' => $matrix,
             'homeroomTeacher' => $enrollment ? $this->homeroomTeacher($enrollment) : null,
+            'attendance' => $enrollment ? $this->attendanceSummary($enrollment) : [],
         ])->stream("boletin-{$student->id}.pdf");
     }
 
@@ -92,6 +93,32 @@ class ReportController extends Controller
             ->first();
 
         return $assignment?->teacher?->full_name;
+    }
+
+    /**
+     * Cuenta ausencias y tardanzas por trimestre a partir de las fechas de
+     * asistencia registradas — la tabla attendance no guarda period_id.
+     *
+     * @return array<int, array{ausencias: int, tardanzas: int}>
+     */
+    private function attendanceSummary(Enrollment $enrollment): array
+    {
+        $records = $enrollment->attendance;
+
+        $summary = [];
+
+        foreach ($enrollment->academicYear->periods as $period) {
+            $inPeriod = $records->filter(
+                fn ($record) => $record->date->between($period->start_date, $period->end_date)
+            );
+
+            $summary[$period->id] = [
+                'ausencias' => $inPeriod->where('type', 'ausencia')->count(),
+                'tardanzas' => $inPeriod->where('type', 'tardanza')->count(),
+            ];
+        }
+
+        return $summary;
     }
 
     /**
