@@ -37,7 +37,7 @@
                 @endcanany
 
                 {{-- Gestión --}}
-                @canany(['student.view', 'guardian.view', 'enrollment.view', 'teacher.view', 'scores.view', 'attendance.view'])
+                @canany(['student.view', 'guardian.view', 'enrollment.view', 'teacher.view', 'scores.view', 'attendance.view', 'habits.view'])
                     <flux:sidebar.group heading="Gestión" class="grid">
                         @can('student.view')
                             <flux:sidebar.item icon="users" :href="route('students.index')" :current="request()->routeIs('students.*')" wire:navigate>
@@ -67,6 +67,11 @@
                         @can('attendance.view')
                             <flux:sidebar.item icon="clipboard-document-check" :href="route('attendance.index')" :current="request()->routeIs('attendance.*')" wire:navigate>
                                 Asistencia
+                            </flux:sidebar.item>
+                        @endcan
+                        @can('habits.view')
+                            <flux:sidebar.item icon="face-smile" :href="route('habits.index')" :current="request()->routeIs('habits.*')" wire:navigate>
+                                Hábitos
                             </flux:sidebar.item>
                         @endcan
                     </flux:sidebar.group>

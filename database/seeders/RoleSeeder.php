@@ -39,6 +39,9 @@ class RoleSeeder extends Seeder
             // Asistencia
             'attendance.view', 'attendance.enter',
 
+            // Hábitos y actitudes
+            'habits.view', 'habits.enter',
+
             // Reportes
             'reports.view', 'reports.print',
 
@@ -71,6 +74,7 @@ class RoleSeeder extends Seeder
             'teacher.view',
             'scores.view',
             'attendance.view',
+            'habits.view',
             'reports.view', 'reports.print',
         ]);
 
@@ -80,6 +84,7 @@ class RoleSeeder extends Seeder
             'student.view',
             'scores.view', 'scores.enter',
             'attendance.view', 'attendance.enter',
+            'habits.view', 'habits.enter',
             'reports.view',
         ]);
 

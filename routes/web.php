@@ -26,6 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('guardians', 'pages::guardians.index')->name('guardians.index')->middleware('can:guardian.view');
     Route::livewire('scores', 'pages::scores.index')->name('scores.index')->middleware('can:scores.view');
     Route::livewire('attendance', 'pages::attendance.index')->name('attendance.index')->middleware('can:attendance.view');
+    Route::livewire('habits', 'pages::habits.index')->name('habits.index')->middleware('can:habits.view');
     Route::livewire('portal', 'pages::portal.index')->name('portal.index')->middleware('can:portal.view');
     Route::livewire('enrollments', 'pages::enrollments.index')->name('enrollments.index')->middleware('can:enrollment.view');
     Route::livewire('enrollments/create', 'pages::enrollments.create')->name('enrollments.create')->middleware('can:enrollment.create');

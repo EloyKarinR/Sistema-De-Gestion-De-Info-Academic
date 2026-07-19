@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Classroom;
 use App\Models\Enrollment;
 use App\Models\GradeScore;
+use App\Models\HabitScore;
 use App\Models\Institution;
 use App\Models\Student;
 use App\Models\SubjectAssignment;
@@ -30,6 +31,15 @@ class ReportController extends Controller
 
         $institution = Institution::first();
 
+        $habits = $institution?->habits()->orderBy('order')->get() ?? collect();
+        $habitMatrix = [];
+
+        if ($enrollment) {
+            foreach (HabitScore::where('enrollment_id', $enrollment->id)->get() as $score) {
+                $habitMatrix[$score->habit_id][$score->period_id] = $score->score;
+            }
+        }
+
         return Pdf::loadView('pdf.boletin', [
             'institution' => $institution,
             'logoPath' => $this->logoPath($institution),
@@ -38,6 +48,8 @@ class ReportController extends Controller
             'matrix' => $matrix,
             'homeroomTeacher' => $enrollment ? $this->homeroomTeacher($enrollment) : null,
             'attendance' => $enrollment ? $this->attendanceSummary($enrollment) : [],
+            'habits' => $habits,
+            'habitMatrix' => $habitMatrix,
         ])->stream("boletin-{$student->id}.pdf");
     }
 

@@ -102,6 +102,32 @@
         </table>
     @endif
 
+    @if ($enrollment && $habits->isNotEmpty())
+        <table class="grades" style="margin-top: 16px;">
+            <thead>
+                <tr>
+                    <th>Hábitos y Actitudes</th>
+                    @foreach ($enrollment->academicYear->periods as $period)
+                        <th>{{ $period->name }}</th>
+                    @endforeach
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($habits as $habit)
+                    <tr>
+                        <td>{{ $habit->name }}</td>
+                        @foreach ($enrollment->academicYear->periods as $period)
+                            <td class="score">{{ $habitMatrix[$habit->id][$period->id] ?? '—' }}</td>
+                        @endforeach
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+        <p style="font-size: 10px; color: #888; margin-top: 4px;">
+            S: Satisfactorio &nbsp; R: Regular &nbsp; X: No satisface
+        </p>
+    @endif
+
     <div class="footer">
         Emitido el {{ now()->format('d/m/Y H:i') }}
     </div>
