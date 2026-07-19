@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\Enrollment;
+use App\Models\Guardian;
 use App\Models\Student;
 use App\Models\SubjectAssignment;
 use App\Models\Teacher;
+use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -152,6 +154,74 @@ class StudentsIndexTest extends TestCase
             ->call('deleteStudent', $student->id);
 
         $this->assertDatabaseHas('students', ['id' => $student->id]);
+    }
+
+    public function test_al_eliminar_un_estudiante_tambien_se_borra_el_acudiente_que_queda_sin_hijos(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $secretaria = $this->makeStaffUser('secretaria', $team);
+
+        $student = Student::create(['first_name' => 'Ana', 'last_name' => 'Pérez', 'birth_date' => '2018-01-01', 'sex' => 'F', 'address' => 'Calle 2']);
+        $guardian = Guardian::create(['first_name' => 'Marta', 'last_name' => 'Pérez', 'relationship' => 'madre', 'primary_phone' => '6000-0000']);
+        $student->guardians()->attach($guardian->id, ['is_primary' => true]);
+
+        Livewire::actingAs($secretaria)
+            ->test('pages::students.index')
+            ->call('deleteStudent', $student->id);
+
+        $this->assertDatabaseMissing('students', ['id' => $student->id]);
+        $this->assertDatabaseMissing('guardians', ['id' => $guardian->id]);
+    }
+
+    public function test_al_eliminar_un_estudiante_no_se_borra_un_acudiente_con_otros_hijos(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $secretaria = $this->makeStaffUser('secretaria', $team);
+
+        $institution = $this->makeInstitution();
+        $grade = $this->makeGrade($institution);
+        $year = $this->makeActiveYear($institution);
+        $classroom = $this->makeClassroom($grade, $year);
+
+        $abandonedStudent = Student::create(['first_name' => 'Ana', 'last_name' => 'Pérez', 'birth_date' => '2018-01-01', 'sex' => 'F', 'address' => 'Calle 2']);
+        $enrolledStudent = Student::create(['first_name' => 'Beto', 'last_name' => 'Pérez', 'birth_date' => '2018-01-01', 'sex' => 'M', 'address' => 'Calle 2']);
+        Enrollment::create(['student_id' => $enrolledStudent->id, 'classroom_id' => $classroom->id, 'academic_year_id' => $year->id, 'registered_by' => $secretaria->id, 'enrollment_date' => '2026-02-01', 'status' => 'activo', 'enrollment_type' => 'nuevo_ingreso']);
+
+        $guardian = Guardian::create(['first_name' => 'Marta', 'last_name' => 'Pérez', 'relationship' => 'madre', 'primary_phone' => '6000-0000']);
+        $abandonedStudent->guardians()->attach($guardian->id, ['is_primary' => true]);
+        $enrolledStudent->guardians()->attach($guardian->id, ['is_primary' => true]);
+
+        Livewire::actingAs($secretaria)
+            ->test('pages::students.index')
+            ->call('deleteStudent', $abandonedStudent->id);
+
+        $this->assertDatabaseMissing('students', ['id' => $abandonedStudent->id]);
+        $this->assertDatabaseHas('guardians', ['id' => $guardian->id]);
+        $this->assertDatabaseHas('students', ['id' => $enrolledStudent->id]);
+    }
+
+    public function test_al_eliminar_un_acudiente_huerfano_tambien_se_borra_su_cuenta_del_portal(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $team = $this->makeTeam();
+        $secretaria = $this->makeStaffUser('secretaria', $team);
+
+        $student = Student::create(['first_name' => 'Ana', 'last_name' => 'Pérez', 'birth_date' => '2018-01-01', 'sex' => 'F', 'address' => 'Calle 2']);
+        $portalUser = User::factory()->create();
+        $guardian = Guardian::create(['first_name' => 'Marta', 'last_name' => 'Pérez', 'relationship' => 'madre', 'primary_phone' => '6000-0000', 'user_id' => $portalUser->id]);
+        $student->guardians()->attach($guardian->id, ['is_primary' => true]);
+
+        Livewire::actingAs($secretaria)
+            ->test('pages::students.index')
+            ->call('deleteStudent', $student->id);
+
+        $this->assertDatabaseMissing('guardians', ['id' => $guardian->id]);
+        $this->assertDatabaseMissing('users', ['id' => $portalUser->id]);
     }
 
     public function test_docente_no_puede_eliminar_estudiantes(): void

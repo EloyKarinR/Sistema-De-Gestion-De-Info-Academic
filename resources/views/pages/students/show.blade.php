@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Students\DeleteOrphanedStudent;
 use App\Enums\Shift;
 use App\Enums\TeamRole;
 use App\Models\ClassSchedule;
@@ -171,7 +172,7 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
             return;
         }
 
-        $this->student->delete();
+        (new DeleteOrphanedStudent)->handle($this->student);
 
         Flux::toast(variant: 'success', text: 'Estudiante eliminado.');
 
