@@ -258,7 +258,7 @@ new #[Layout('layouts.app')] #[Title('Promoción de estudiantes')] class extends
 
         {{-- Listos para promover --}}
         <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-4">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <flux:heading size="lg">Listos para promover</flux:heading>
                 @can('academic.manage')
                     <flux:button

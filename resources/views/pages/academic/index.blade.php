@@ -364,7 +364,7 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
 
     {{-- Año Escolar Activo --}}
     <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-4">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-center gap-3">
                 <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
                     <flux:icon name="calendar" class="size-5" />
@@ -372,7 +372,7 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
                 <flux:heading size="lg">Año Escolar Activo</flux:heading>
             </div>
             @can('academic.manage')
-                <div class="flex gap-2">
+                <div class="flex flex-wrap gap-2">
                     <flux:button icon="arrow-up-circle" size="sm" variant="ghost" :href="route('academic.promote')" wire:navigate>
                         Promover estudiantes
                     </flux:button>
@@ -410,7 +410,7 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
 
     {{-- Aulas --}}
     <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-4">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-center gap-3">
                 <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400">
                     <flux:icon name="building-office-2" class="size-5" />
@@ -419,7 +419,7 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
             </div>
             @can('academic.manage')
                 @if ($this->activeYear)
-                    <div class="flex gap-2">
+                    <div class="flex flex-wrap gap-2">
                         @if ($this->activeYear->classrooms->isEmpty())
                             <flux:button
                                 icon="document-duplicate"

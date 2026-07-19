@@ -110,7 +110,7 @@ new #[Layout('layouts.app')] #[Title('Matrículas')] class extends Component
 <div class="flex h-full w-full flex-1 flex-col gap-6">
 
     {{-- Encabezado --}}
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <flux:heading size="xl">Matrículas</flux:heading>
             <flux:subheading>
