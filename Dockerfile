@@ -1,6 +1,6 @@
 # Los assets de Vite (public/build) se compilan localmente y se commitean
-# al repo — el plan gratuito de Render no tiene memoria suficiente para
-# correr "npm run build" (Vite + Tailwind) durante el build de la imagen.
+# al repo — correr "npm run build" (Vite + Tailwind) durante el build de la
+# imagen consume más memoria de la que conviene gastar en el servidor.
 # Para regenerarlos: npm run build && git add public/build
 
 FROM php:8.4-cli-bookworm
