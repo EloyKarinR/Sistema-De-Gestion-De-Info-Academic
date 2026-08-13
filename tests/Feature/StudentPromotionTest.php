@@ -40,7 +40,7 @@ class StudentPromotionTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade3 = $this->makeGrade($institution, '3°', 3);
         $grade4 = $this->makeGrade($institution, '4°', 4);
 
@@ -91,7 +91,7 @@ class StudentPromotionTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade3 = $this->makeGrade($institution, '3°', 3);
         $grade4 = $this->makeGrade($institution, '4°', 4);
 
@@ -133,7 +133,7 @@ class StudentPromotionTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade12 = $this->makeGrade($institution, '12°', 12);
 
         $yearOld = $this->makeActiveYear($institution, 2025);
@@ -168,7 +168,7 @@ class StudentPromotionTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade3 = $this->makeGrade($institution, '3°', 3);
         $this->makeGrade($institution, '4°', 4); // Existe el grado, pero no se crea aula en el año nuevo.
 
@@ -214,7 +214,7 @@ class StudentPromotionTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade10 = $this->makeSecondaryGrade($institution, '10°', 10);
         $this->makeSecondaryGrade($institution, '11°', 11);
 
@@ -254,7 +254,7 @@ class StudentPromotionTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade10 = $this->makeSecondaryGrade($institution, '10°', 10);
         $grade11 = $this->makeSecondaryGrade($institution, '11°', 11);
 

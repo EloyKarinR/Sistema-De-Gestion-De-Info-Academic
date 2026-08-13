@@ -51,7 +51,7 @@ class InstitutionAcademicTest extends TestCase
         $admin = $this->makeStaffUser('admin', $team);
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
 
         Livewire::actingAs($admin)
@@ -96,7 +96,7 @@ class InstitutionAcademicTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade3 = $this->makeGrade($institution, '3°', 3);
         $grade4 = $this->makeGrade($institution, '4°', 4);
 
@@ -124,7 +124,7 @@ class InstitutionAcademicTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
 
@@ -146,7 +146,7 @@ class InstitutionAcademicTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
 
         $yearOld = $this->makeActiveYear($institution, 2026);

@@ -23,6 +23,7 @@ class TeacherManagementTest extends TestCase
         $this->seed(RoleSeeder::class);
 
         $team = $this->makeTeam();
+        $this->makeInstitution($team);
         $admin = $this->makeStaffUser('admin', $team);
 
         Livewire::actingAs($admin)
@@ -69,7 +70,7 @@ class TeacherManagementTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $matematica = $institution->subjects()->create(['name' => 'Matemática']);
@@ -145,7 +146,7 @@ class TeacherManagementTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $year = $this->makeActiveYear($institution);
 
         $grade3 = $this->makeGrade($institution, '3°', 3);
@@ -187,7 +188,7 @@ class TeacherManagementTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $ingles = $institution->subjects()->create(['name' => 'Inglés', 'is_specialized' => true]);
@@ -228,7 +229,7 @@ class TeacherManagementTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
 
@@ -277,7 +278,7 @@ class TeacherManagementTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $ingles = $institution->subjects()->create(['name' => 'Inglés', 'is_specialized' => true]);

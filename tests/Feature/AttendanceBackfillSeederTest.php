@@ -23,7 +23,7 @@ class AttendanceBackfillSeederTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $classroom = $this->makeClassroom($grade, $year);

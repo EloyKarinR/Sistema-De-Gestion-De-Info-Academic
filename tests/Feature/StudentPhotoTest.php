@@ -23,7 +23,7 @@ class StudentPhotoTest extends TestCase
         $team = $this->makeTeam();
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $this->makeClassroom($grade, $year);
@@ -55,6 +55,7 @@ class StudentPhotoTest extends TestCase
         $this->seed(RoleSeeder::class);
 
         $team = $this->makeTeam();
+        $this->makeInstitution($team);
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
         $student = Student::create([
@@ -79,6 +80,7 @@ class StudentPhotoTest extends TestCase
         $this->seed(RoleSeeder::class);
 
         $team = $this->makeTeam();
+        $this->makeInstitution($team);
         $docente = $this->makeStaffUser('docente', $team);
 
         $student = Student::create([

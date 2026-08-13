@@ -19,6 +19,7 @@ class StudentGuardianActionsTest extends TestCase
         $this->seed(RoleSeeder::class);
 
         $team = $this->makeTeam();
+        $this->makeInstitution($team);
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
         $student = Student::create(['first_name' => 'Ana', 'last_name' => 'Pérez', 'birth_date' => '2018-01-01', 'sex' => 'F', 'address' => 'Calle 2']);
@@ -51,6 +52,7 @@ class StudentGuardianActionsTest extends TestCase
         $this->seed(RoleSeeder::class);
 
         $team = $this->makeTeam();
+        $this->makeInstitution($team);
         $docente = $this->makeStaffUser('docente', $team);
 
         $student = Student::create(['first_name' => 'Ana', 'last_name' => 'Pérez', 'birth_date' => '2018-01-01', 'sex' => 'F', 'address' => 'Calle 2']);
@@ -68,6 +70,7 @@ class StudentGuardianActionsTest extends TestCase
         $this->seed(RoleSeeder::class);
 
         $team = $this->makeTeam();
+        $this->makeInstitution($team);
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
         $student = Student::create(['first_name' => 'Ana', 'last_name' => 'Pérez', 'birth_date' => '2018-01-01', 'sex' => 'F', 'address' => 'Calle 2']);

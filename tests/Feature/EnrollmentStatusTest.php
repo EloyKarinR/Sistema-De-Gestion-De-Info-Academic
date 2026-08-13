@@ -21,7 +21,7 @@ class EnrollmentStatusTest extends TestCase
         $team = $this->makeTeam();
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $classroom = $this->makeClassroom($grade, $year);
@@ -54,7 +54,7 @@ class EnrollmentStatusTest extends TestCase
         $team = $this->makeTeam();
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $classroomA = $this->makeClassroom($grade, $year, 'A');
@@ -96,7 +96,7 @@ class EnrollmentStatusTest extends TestCase
         $team = $this->makeTeam();
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $classroom = $this->makeClassroom($grade, $year);
@@ -123,7 +123,7 @@ class EnrollmentStatusTest extends TestCase
         $team = $this->makeTeam();
         $docente = $this->makeStaffUser('docente', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $classroom = $this->makeClassroom($grade, $year);

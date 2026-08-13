@@ -18,6 +18,7 @@ class GuardianManagementTest extends TestCase
         $this->seed(RoleSeeder::class);
 
         $team = $this->makeTeam();
+        $this->makeInstitution($team);
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
         $guardian = Guardian::create([
@@ -46,6 +47,7 @@ class GuardianManagementTest extends TestCase
         $this->seed(RoleSeeder::class);
 
         $team = $this->makeTeam();
+        $this->makeInstitution($team);
         $docente = $this->makeStaffUser('docente', $team);
 
         $guardian = Guardian::create([

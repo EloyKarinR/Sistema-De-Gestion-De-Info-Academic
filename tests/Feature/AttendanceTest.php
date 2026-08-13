@@ -24,7 +24,7 @@ class AttendanceTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $matematica = $institution->subjects()->create(['name' => 'Matemática']);
@@ -76,7 +76,7 @@ class AttendanceTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $matematica = $institution->subjects()->create(['name' => 'Matemática']);
@@ -124,7 +124,7 @@ class AttendanceTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $classroom = $this->makeClassroom($grade, $year, 'A');
@@ -147,7 +147,7 @@ class AttendanceTest extends TestCase
         $team = $this->makeTeam();
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $classroom = $this->makeClassroom($grade, $year, 'A');

@@ -30,7 +30,7 @@ class PermissionsTest extends TestCase
             'acudiente' => $this->makeStaffUser('acudiente', $team),
         ];
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $classroom = $this->makeClassroom($grade, $year);

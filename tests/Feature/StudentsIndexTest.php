@@ -25,7 +25,7 @@ class StudentsIndexTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('secretaria', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $year = $this->makeActiveYear($institution);
 
         $grade6 = $this->makeGrade($institution, '6°', 6);
@@ -56,7 +56,7 @@ class StudentsIndexTest extends TestCase
         $team = $this->makeTeam();
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
 
@@ -83,7 +83,7 @@ class StudentsIndexTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $matematica = $institution->subjects()->create(['name' => 'Matemática']);
@@ -122,6 +122,7 @@ class StudentsIndexTest extends TestCase
         $this->seed(RoleSeeder::class);
 
         $team = $this->makeTeam();
+        $this->makeInstitution($team);
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
         $student = Student::create(['first_name' => 'Ana', 'last_name' => 'Pérez', 'birth_date' => '2018-01-01', 'sex' => 'F', 'address' => 'Calle 2']);
@@ -141,7 +142,7 @@ class StudentsIndexTest extends TestCase
         $team = $this->makeTeam();
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $classroom = $this->makeClassroom($grade, $year);
@@ -161,6 +162,7 @@ class StudentsIndexTest extends TestCase
         $this->seed(RoleSeeder::class);
 
         $team = $this->makeTeam();
+        $this->makeInstitution($team);
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
         $student = Student::create(['first_name' => 'Ana', 'last_name' => 'Pérez', 'birth_date' => '2018-01-01', 'sex' => 'F', 'address' => 'Calle 2']);
@@ -182,7 +184,7 @@ class StudentsIndexTest extends TestCase
         $team = $this->makeTeam();
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $classroom = $this->makeClassroom($grade, $year);
@@ -209,6 +211,7 @@ class StudentsIndexTest extends TestCase
         $this->seed(RoleSeeder::class);
 
         $team = $this->makeTeam();
+        $this->makeInstitution($team);
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
         $student = Student::create(['first_name' => 'Ana', 'last_name' => 'Pérez', 'birth_date' => '2018-01-01', 'sex' => 'F', 'address' => 'Calle 2']);
@@ -229,6 +232,7 @@ class StudentsIndexTest extends TestCase
         $this->seed(RoleSeeder::class);
 
         $team = $this->makeTeam();
+        $this->makeInstitution($team);
         $docenteUser = $this->makeStaffUser('docente', $team);
 
         $student = Student::create(['first_name' => 'Ana', 'last_name' => 'Pérez', 'birth_date' => '2018-01-01', 'sex' => 'F', 'address' => 'Calle 2']);

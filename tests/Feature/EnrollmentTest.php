@@ -21,7 +21,7 @@ class EnrollmentTest extends TestCase
         $team = $this->makeTeam();
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $classroom = $this->makeClassroom($grade, $year);
@@ -74,7 +74,7 @@ class EnrollmentTest extends TestCase
         $team = $this->makeTeam();
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $classroom = $this->makeClassroom($grade, $year);
@@ -106,7 +106,7 @@ class EnrollmentTest extends TestCase
         $team = $this->makeTeam();
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $year = $this->makeActiveYear($institution);
 
         $grade = $this->makeGrade($institution, 'Pre-Kinder', 0);

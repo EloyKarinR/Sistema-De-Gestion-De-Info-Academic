@@ -25,7 +25,7 @@ class HabitsTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $this->seed(HabitSeeder::class);
         $habit = $institution->habits()->orderBy('order')->first();
 
@@ -68,7 +68,7 @@ class HabitsTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $this->seed(HabitSeeder::class);
         $habit = $institution->habits()->orderBy('order')->first();
 
@@ -117,7 +117,8 @@ class HabitsTest extends TestCase
     {
         $this->seed(RoleSeeder::class);
 
-        $institution = $this->makeInstitution();
+        $team = $this->makeTeam();
+        $institution = $this->makeInstitution($team);
         $this->seed(HabitSeeder::class);
 
         $grade = $this->makeGrade($institution);
@@ -125,7 +126,6 @@ class HabitsTest extends TestCase
         $classroom = $this->makeClassroom($grade, $year, 'A');
         $period = $year->periods->first();
 
-        $team = $this->makeTeam();
         $docenteUser = $this->makeStaffUser('docente', $team);
         Teacher::create(['user_id' => $docenteUser->id, 'cedula' => '8-000-0000', 'first_name' => 'Carlos', 'last_name' => 'Mendoza', 'shift' => 'matutino']);
 
@@ -141,7 +141,8 @@ class HabitsTest extends TestCase
     {
         $this->seed(RoleSeeder::class);
 
-        $institution = $this->makeInstitution();
+        $team = $this->makeTeam();
+        $institution = $this->makeInstitution($team);
         $this->seed(HabitSeeder::class);
 
         $grade = $this->makeGrade($institution);
@@ -149,7 +150,6 @@ class HabitsTest extends TestCase
         $classroom = $this->makeClassroom($grade, $year, 'A');
         $period = $year->periods->first();
 
-        $team = $this->makeTeam();
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
         Livewire::actingAs($secretaria)

@@ -24,7 +24,7 @@ class HabitScoreBackfillSeederTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $this->seed(HabitSeeder::class);
         $habitCount = $institution->habits()->count();
 
@@ -65,7 +65,7 @@ class HabitScoreBackfillSeederTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $this->seed(HabitSeeder::class);
 
         $grade = $this->makeGrade($institution);

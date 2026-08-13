@@ -25,7 +25,7 @@ class ClassScheduleTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
 
@@ -63,7 +63,7 @@ class ClassScheduleTest extends TestCase
         $admin = $this->makeStaffUser('admin', $team);
         $acudienteUser = $this->makeStaffUser('acudiente', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $matematica = $institution->subjects()->create(['name' => 'Matemática']);
@@ -105,7 +105,7 @@ class ClassScheduleTest extends TestCase
         $team = $this->makeTeam();
         $admin = $this->makeStaffUser('admin', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $matematica = $institution->subjects()->create(['name' => 'Matemática']);

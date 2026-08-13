@@ -25,7 +25,7 @@ class GuardianPortalTest extends TestCase
         $admin = $this->makeStaffUser('admin', $team);
         $secretaria = $this->makeStaffUser('secretaria', $team);
 
-        $institution = $this->makeInstitution();
+        $institution = $this->makeInstitution($team);
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);
         $matematica = $institution->subjects()->create(['name' => 'Matemática']);

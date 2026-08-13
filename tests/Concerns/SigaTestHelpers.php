@@ -10,6 +10,7 @@ use App\Models\Grade;
 use App\Models\Institution;
 use App\Models\Team;
 use App\Models\User;
+use App\Support\TenantContext;
 
 trait SigaTestHelpers
 {
@@ -36,9 +37,17 @@ trait SigaTestHelpers
         return $user->fresh();
     }
 
-    protected function makeInstitution(string $name = 'Escuela SIGA'): Institution
+    protected function makeInstitution(Team $team, string $name = 'Escuela SIGA'): Institution
     {
-        return Institution::create(['name' => $name, 'type' => 'escuela', 'address' => 'Calle 1']);
+        // team_id no es fillable a propósito (nunca se setea por asignación
+        // masiva) — se asigna aparte antes de guardar.
+        $institution = new Institution(['name' => $name, 'type' => 'escuela', 'address' => 'Calle 1']);
+        $institution->team_id = $team->id;
+        $institution->save();
+
+        app(TenantContext::class)->set($institution);
+
+        return $institution;
     }
 
     protected function makeActiveYear(Institution $institution, int $year = 2026): AcademicYear
