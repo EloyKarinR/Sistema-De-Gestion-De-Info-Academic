@@ -13,7 +13,7 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        $team = Team::create(['name' => 'Escuela SIGA', 'is_personal' => false]);
+        $team = Team::first();
 
         $admin = User::create([
             'name' => 'Administrador SIGA',
