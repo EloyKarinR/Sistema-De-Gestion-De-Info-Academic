@@ -34,9 +34,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified', 'can:reports.print'])->group(function () {
-    Route::get('reports/boletin/{student}', [ReportController::class, 'boletin'])->name('reports.boletin');
-    Route::get('reports/constancia/{enrollment}', [ReportController::class, 'constancia'])->name('reports.constancia');
-    Route::get('reports/listado/{classroom}', [ReportController::class, 'listado'])->name('reports.listado');
+    Route::get('reports/boletin/{student}', [ReportController::class, 'boletin'])->name('reports.boletin')->middleware('can:view,student');
+    Route::get('reports/constancia/{enrollment}', [ReportController::class, 'constancia'])->name('reports.constancia')->middleware('can:view,enrollment');
+    Route::get('reports/listado/{classroom}', [ReportController::class, 'listado'])->name('reports.listado')->middleware('can:view,classroom');
 });
 
 Route::middleware(['auth'])->group(function () {
