@@ -5,7 +5,6 @@ use App\Models\Classroom;
 use App\Models\Enrollment;
 use App\Models\Habit;
 use App\Models\HabitScore;
-use App\Models\Institution;
 use App\Models\SubjectAssignment;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
@@ -82,7 +81,7 @@ new #[Layout('layouts.app')] #[Title('Hábitos y Actitudes')] class extends Comp
     #[Computed]
     public function habits()
     {
-        $institution = Institution::first();
+        $institution = Auth::user()->currentInstitution();
 
         if (! $institution) {
             return collect();

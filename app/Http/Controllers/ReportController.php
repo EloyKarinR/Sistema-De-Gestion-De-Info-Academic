@@ -11,6 +11,7 @@ use App\Models\Student;
 use App\Models\SubjectAssignment;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class ReportController extends Controller
@@ -29,7 +30,7 @@ class ReportController extends Controller
             }
         }
 
-        $institution = Institution::first();
+        $institution = Auth::user()->currentInstitution();
 
         $habits = $institution?->habits()->orderBy('order')->get() ?? collect();
         $habitMatrix = [];
@@ -62,7 +63,7 @@ class ReportController extends Controller
             'registeredBy',
         ]);
 
-        $institution = Institution::first();
+        $institution = Auth::user()->currentInstitution();
 
         return Pdf::loadView('pdf.constancia', [
             'institution' => $institution,
@@ -81,7 +82,7 @@ class ReportController extends Controller
             ->get()
             ->sortBy(fn ($e) => $e->student->last_name);
 
-        $institution = Institution::first();
+        $institution = Auth::user()->currentInstitution();
 
         return Pdf::loadView('pdf.listado', [
             'institution' => $institution,

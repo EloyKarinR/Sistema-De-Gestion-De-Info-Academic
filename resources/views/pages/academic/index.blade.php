@@ -6,9 +6,9 @@ use App\Models\AcademicYear;
 use App\Models\Classroom;
 use App\Models\ClassSchedule;
 use App\Models\Grade;
-use App\Models\Institution;
 use Carbon\Carbon;
 use Flux\Flux;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -76,7 +76,7 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
     #[Computed]
     public function grades()
     {
-        $institution = Institution::first();
+        $institution = Auth::user()->currentInstitution();
 
         return Grade::whereHas('educationLevel', fn ($q) => $q->where('institution_type', $institution?->type ?? 'escuela')
         )
@@ -256,7 +256,7 @@ new #[Layout('layouts.app')] #[Title('Académico')] class extends Component
             'endDate' => 'required|date|after:startDate',
         ]);
 
-        $institution = Institution::first();
+        $institution = Auth::user()->currentInstitution();
 
         if (! $institution) {
             Flux::toast(variant: 'danger', text: 'Configura los datos de la institución primero.');

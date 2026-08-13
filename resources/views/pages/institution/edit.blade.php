@@ -2,6 +2,7 @@
 
 use App\Models\Institution;
 use Flux\Flux;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Validate;
@@ -40,7 +41,7 @@ new #[Layout('layouts.app')] #[Title('Institución')] class extends Component
 
     public function mount(): void
     {
-        $this->institution = Institution::first();
+        $this->institution = Auth::user()->currentInstitution();
 
         if ($this->institution) {
             $this->name = $this->institution->name;
@@ -76,7 +77,10 @@ new #[Layout('layouts.app')] #[Title('Institución')] class extends Component
         if ($this->institution) {
             $this->institution->update($data);
         } else {
-            $this->institution = Institution::create($data);
+            // team_id no es fillable a propósito — se asigna aparte antes de guardar.
+            $this->institution = new Institution($data);
+            $this->institution->team_id = Auth::user()->currentTeam->id;
+            $this->institution->save();
         }
 
         $this->logo = null;
