@@ -4,6 +4,7 @@ namespace App\Concerns;
 
 use App\Enums\TeamPermission;
 use App\Enums\TeamRole;
+use App\Models\Institution;
 use App\Models\Membership;
 use App\Models\Team;
 use App\Support\TeamPermissions;
@@ -74,6 +75,14 @@ trait HasTeams
         return $this->teams()
             ->where('is_personal', true)
             ->first();
+    }
+
+    /**
+     * Get the institution (escuela) linked to the user's current team.
+     */
+    public function currentInstitution(): ?Institution
+    {
+        return $this->currentTeam?->institution;
     }
 
     /**

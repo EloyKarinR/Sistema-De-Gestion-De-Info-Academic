@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\BelongsToInstitution;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Student extends Model
 {
+    use BelongsToInstitution;
+
     protected $fillable = [
         'cedula', 'first_name', 'last_name', 'birth_date', 'sex',
         'birth_place', 'blood_type', 'medical_conditions', 'previous_school',

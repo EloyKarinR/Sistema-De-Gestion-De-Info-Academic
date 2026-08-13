@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Concerns\BelongsToInstitution;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Teacher extends Model
 {
+    use BelongsToInstitution;
+
     protected $fillable = [
         'user_id', 'cedula', 'first_name', 'last_name', 'phone', 'specialization', 'shift',
     ];

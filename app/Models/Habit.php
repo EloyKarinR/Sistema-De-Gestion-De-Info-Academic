@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Concerns\BelongsToInstitution;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Habit extends Model
 {
+    use BelongsToInstitution;
+
     protected $fillable = [
         'institution_id', 'name', 'order',
     ];

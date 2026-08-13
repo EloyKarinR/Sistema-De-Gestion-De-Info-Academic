@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Concerns\BelongsToInstitution;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Guardian extends Model
 {
+    use BelongsToInstitution;
+
     protected $fillable = [
         'user_id', 'cedula', 'first_name', 'last_name', 'relationship',
         'primary_phone', 'emergency_phone', 'email', 'occupation',
