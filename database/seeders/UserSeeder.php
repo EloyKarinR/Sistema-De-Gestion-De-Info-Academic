@@ -24,7 +24,7 @@ class UserSeeder extends Seeder
             'password' => Hash::make('password'),
             'current_team_id' => $team->id,
         ]);
-        $admin->assignRole('admin');
+        $admin->assignRoleInTeam('admin', $team);
         $team->members()->attach($admin->id, ['role' => TeamRole::Owner->value]);
 
         $secretaria = User::create([
@@ -33,7 +33,7 @@ class UserSeeder extends Seeder
             'password' => Hash::make('password'),
             'current_team_id' => $team->id,
         ]);
-        $secretaria->assignRole('secretaria');
+        $secretaria->assignRoleInTeam('secretaria', $team);
         $team->members()->attach($secretaria->id, ['role' => TeamRole::Member->value]);
 
         $docenteUser = User::create([
@@ -42,7 +42,7 @@ class UserSeeder extends Seeder
             'password' => Hash::make('password'),
             'current_team_id' => $team->id,
         ]);
-        $docenteUser->assignRole('docente');
+        $docenteUser->assignRoleInTeam('docente', $team);
         $team->members()->attach($docenteUser->id, ['role' => TeamRole::Member->value]);
 
         Teacher::create([
@@ -75,7 +75,7 @@ class UserSeeder extends Seeder
             'password' => Hash::make('password'),
             'current_team_id' => $team->id,
         ]);
-        $user->assignRole('docente');
+        $user->assignRoleInTeam('docente', $team);
         $team->members()->attach($user->id, ['role' => TeamRole::Member->value]);
 
         return Teacher::create([

@@ -178,7 +178,7 @@ class SchoolStructureSeeder extends Seeder
             'password' => Hash::make('password'),
             'current_team_id' => $team->id,
         ]);
-        $user->assignRole('docente');
+        $user->assignRoleInTeam('docente', $team);
         $team->members()->attach($user->id, ['role' => TeamRole::Member->value]);
 
         $teacher = Teacher::create([

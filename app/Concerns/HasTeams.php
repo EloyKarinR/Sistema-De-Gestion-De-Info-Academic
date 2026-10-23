@@ -14,7 +14,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
+use Spatie\Permission\Models\Role;
 
 trait HasTeams
 {
@@ -97,6 +99,9 @@ trait HasTeams
         $this->update(['current_team_id' => $team->id]);
         $this->setRelation('currentTeam', $team);
 
+        // Los roles de Spatie son por equipo: los ya cargados son del anterior.
+        $this->unsetRelation('roles')->unsetRelation('permissions');
+
         URL::defaults(['current_team' => $team->slug]);
 
         return true;
@@ -116,6 +121,23 @@ trait HasTeams
     public function isCurrentTeam(Team $team): bool
     {
         return $this->current_team_id === $team->id;
+    }
+
+    /**
+     * Le da un rol de escuela (admin, secretaria, docente, acudiente) en ESE
+     * equipo, sin depender de cuál sea el equipo actual de nadie. Es la única
+     * forma en que se deben asignar roles. Idempotente.
+     */
+    public function assignRoleInTeam(string $role, Team $team): void
+    {
+        DB::table(config('permission.table_names.model_has_roles'))->insertOrIgnore([
+            'team_id' => $team->id,
+            'role_id' => Role::findByName($role)->id,
+            'model_type' => $this->getMorphClass(),
+            'model_id' => $this->getKey(),
+        ]);
+
+        $this->unsetRelation('roles')->unsetRelation('permissions');
     }
 
     /**

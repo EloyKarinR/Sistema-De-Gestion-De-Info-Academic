@@ -26,7 +26,7 @@ class GuardianPortalSeeder extends Seeder
             'password' => Hash::make('password'),
             'current_team_id' => $team->id,
         ]);
-        $user->assignRole('acudiente');
+        $user->assignRoleInTeam('acudiente', $team);
         $team->members()->attach($user->id, ['role' => TeamRole::Member->value]);
 
         $guardian->update(['user_id' => $user->id]);

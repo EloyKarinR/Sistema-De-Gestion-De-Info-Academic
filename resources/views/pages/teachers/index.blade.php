@@ -107,7 +107,7 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
                 'password' => Hash::make($this->password),
                 'current_team_id' => $team->id,
             ]);
-            $user->assignRole('docente');
+            $user->assignRoleInTeam('docente', $team);
             $team->members()->attach($user->id, ['role' => TeamRole::Member->value]);
 
             Teacher::create([

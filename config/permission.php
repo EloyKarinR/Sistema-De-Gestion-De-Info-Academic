@@ -1,5 +1,9 @@
 <?php
 
+use App\Support\PermissionsTeamResolver;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+
 return [
 
     'models' => [
@@ -13,7 +17,7 @@ return [
          * `Spatie\Permission\Contracts\Permission` contract.
          */
 
-        'permission' => Spatie\Permission\Models\Permission::class,
+        'permission' => Permission::class,
 
         /*
          * When using the "HasRoles" trait from this package, we need to know which
@@ -24,7 +28,7 @@ return [
          * `Spatie\Permission\Contracts\Role` contract.
          */
 
-        'role' => Spatie\Permission\Models\Role::class,
+        'role' => Role::class,
 
     ],
 
@@ -131,12 +135,14 @@ return [
      * (view the latest version of this package's migration file)
      */
 
-    'teams' => false,
+    // Cada Team es una escuela: un usuario puede ser admin en una y docente
+    // (o nada) en otra. Ver App\Support\PermissionsTeamResolver.
+    'teams' => true,
 
     /*
      * The class to use to resolve the permissions team id
      */
-    'team_resolver' => \Spatie\Permission\DefaultTeamResolver::class,
+    'team_resolver' => PermissionsTeamResolver::class,
 
     /*
      * Passport Client Credentials Grant
@@ -183,7 +189,7 @@ return [
          * When permissions or roles are updated the cache is flushed automatically.
          */
 
-        'expiration_time' => \DateInterval::createFromDateString('24 hours'),
+        'expiration_time' => DateInterval::createFromDateString('24 hours'),
 
         /*
          * The cache key used to store all permissions.

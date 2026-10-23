@@ -30,7 +30,7 @@ trait SigaTestHelpers
     protected function makeStaffUser(string $role, Team $team): User
     {
         $user = User::factory()->create();
-        $user->assignRole($role);
+        $user->assignRoleInTeam($role, $team);
         $team->members()->attach($user->id, ['role' => TeamRole::Member->value]);
         $user->update(['current_team_id' => $team->id]);
 

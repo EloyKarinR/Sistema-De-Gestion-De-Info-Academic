@@ -262,7 +262,7 @@ new #[Layout('layouts.app')] #[Title('Detalle Estudiante')] class extends Compon
                 'password' => Hash::make($this->portalPassword),
                 'current_team_id' => $team->id,
             ]);
-            $user->assignRole('acudiente');
+            $user->assignRoleInTeam('acudiente', $team);
             $team->members()->attach($user->id, ['role' => TeamRole::Member->value]);
 
             $guardian->update(['user_id' => $user->id]);

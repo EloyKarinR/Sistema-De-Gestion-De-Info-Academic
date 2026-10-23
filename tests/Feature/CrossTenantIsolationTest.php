@@ -126,7 +126,8 @@ class CrossTenantIsolationTest extends TestCase
         $schoolB = $this->makeFullSchool('B');
 
         $bothSchoolsUser = User::factory()->create();
-        $bothSchoolsUser->assignRole('admin');
+        $bothSchoolsUser->assignRoleInTeam('admin', $schoolA['team']);
+        $bothSchoolsUser->assignRoleInTeam('admin', $schoolB['team']);
         $schoolA['team']->members()->attach($bothSchoolsUser->id, ['role' => TeamRole::Member->value]);
         $schoolB['team']->members()->attach($bothSchoolsUser->id, ['role' => TeamRole::Member->value]);
 

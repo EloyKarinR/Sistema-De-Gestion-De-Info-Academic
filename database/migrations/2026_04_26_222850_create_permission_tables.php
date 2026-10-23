@@ -11,7 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        $teams = config('permission.teams');
+        // Fijo en false: las columnas de equipo las agrega
+        // 2026_10_23_015112_add_team_id_to_permission_tables, así una base
+        // nueva y una que ya estaba en producción terminan igual.
+        $teams = false;
         $tableNames = config('permission.table_names');
         $columnNames = config('permission.column_names');
         $pivotRole = $columnNames['role_pivot_key'] ?? 'role_id';
