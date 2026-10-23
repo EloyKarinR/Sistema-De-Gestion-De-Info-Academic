@@ -13,12 +13,8 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RoleSeeder::class,
-            InstitutionSeeder::class,
+            InstitutionSeeder::class, // incluye el catálogo base (niveles, grados, materias, hábitos)
             AcademicYearSeeder::class,
-            EducationLevelSeeder::class,
-            GradeSeeder::class,
-            SubjectSeeder::class,
-            HabitSeeder::class,
             UserSeeder::class,
             StudentSeeder::class,
             SubjectAssignmentSeeder::class,

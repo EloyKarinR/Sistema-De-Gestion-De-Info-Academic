@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
-use App\Concerns\ScopedThroughAcademicYear;
+use App\Concerns\ScopedThroughParent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Enrollment extends Model
 {
-    use ScopedThroughAcademicYear;
+    use ScopedThroughParent;
+
+    protected static string $tenantParent = 'academicYear';
 
     /**
      * Nota mínima para pasar de año en secundaria (escala 1.0-5.0). En

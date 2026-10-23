@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Institutions\ProvisionInstitutionCatalog;
 use App\Models\Institution;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
@@ -81,6 +82,10 @@ new #[Layout('layouts.app')] #[Title('Institución')] class extends Component
             $this->institution = new Institution($data);
             $this->institution->team_id = Auth::user()->currentTeam->id;
             $this->institution->save();
+
+            // Una escuela recién registrada necesita sus niveles, grados,
+            // materias y hábitos para poder crear aulas y matricular.
+            app(ProvisionInstitutionCatalog::class)->handle($this->institution);
         }
 
         $this->logo = null;

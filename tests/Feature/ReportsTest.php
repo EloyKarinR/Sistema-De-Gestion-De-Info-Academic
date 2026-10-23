@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Institutions\ProvisionInstitutionCatalog;
 use App\Models\Attendance;
 use App\Models\Enrollment;
 use App\Models\HabitScore;
 use App\Models\Student;
 use App\Models\SubjectAssignment;
 use App\Models\Teacher;
-use Database\Seeders\HabitSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -126,7 +126,7 @@ class ReportsTest extends TestCase
         $admin = $this->makeStaffUser('admin', $team);
 
         $institution = $this->makeInstitution($team);
-        $this->seed(HabitSeeder::class);
+        app(ProvisionInstitutionCatalog::class)->habits($institution);
         $habit = $institution->habits()->orderBy('order')->first();
 
         $grade = $this->makeGrade($institution);

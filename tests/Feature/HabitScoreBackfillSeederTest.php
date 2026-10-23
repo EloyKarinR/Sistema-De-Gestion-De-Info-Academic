@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Institutions\ProvisionInstitutionCatalog;
 use App\Models\Enrollment;
 use App\Models\HabitScore;
 use App\Models\Student;
 use Database\Seeders\HabitScoreBackfillSeeder;
-use Database\Seeders\HabitSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\SigaTestHelpers;
@@ -25,7 +25,7 @@ class HabitScoreBackfillSeederTest extends TestCase
         $admin = $this->makeStaffUser('admin', $team);
 
         $institution = $this->makeInstitution($team);
-        $this->seed(HabitSeeder::class);
+        app(ProvisionInstitutionCatalog::class)->habits($institution);
         $habitCount = $institution->habits()->count();
 
         $grade = $this->makeGrade($institution);
@@ -66,7 +66,7 @@ class HabitScoreBackfillSeederTest extends TestCase
         $admin = $this->makeStaffUser('admin', $team);
 
         $institution = $this->makeInstitution($team);
-        $this->seed(HabitSeeder::class);
+        app(ProvisionInstitutionCatalog::class)->habits($institution);
 
         $grade = $this->makeGrade($institution);
         $year = $this->makeActiveYear($institution);

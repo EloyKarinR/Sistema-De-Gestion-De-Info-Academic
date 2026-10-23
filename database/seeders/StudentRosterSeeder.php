@@ -7,6 +7,7 @@ use App\Models\Classroom;
 use App\Models\Guardian;
 use App\Models\Student;
 use App\Models\User;
+use Database\Seeders\Concerns\InteractsWithTenant;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -17,6 +18,8 @@ use Illuminate\Support\Facades\DB;
  */
 class StudentRosterSeeder extends Seeder
 {
+    use InteractsWithTenant;
+
     /** @var array<int, string> */
     private array $maleFirstNames = [
         'Sebastián', 'Mateo', 'Diego', 'Emiliano', 'Adrián', 'Gabriel', 'Samuel', 'Iker', 'Bruno', 'Kevin',
@@ -45,7 +48,9 @@ class StudentRosterSeeder extends Seeder
     public function run(): void
     {
         $year = AcademicYear::where('is_active', true)->first();
-        $registeredBy = User::role('secretaria')->first();
+        // Los roles de Spatie son globales: se busca la secretaria entre los
+        // miembros de ESTA escuela, no en toda la tabla de usuarios.
+        $registeredBy = $this->currentInstitution()->team->members()->role('secretaria')->first();
 
         DB::transaction(function () use ($year, $registeredBy) {
             foreach (Classroom::where('academic_year_id', $year->id)->with('grade')->get() as $classroom) {

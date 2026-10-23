@@ -6,14 +6,17 @@ use App\Enums\TeamRole;
 use App\Models\Teacher;
 use App\Models\Team;
 use App\Models\User;
+use Database\Seeders\Concerns\InteractsWithTenant;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
+    use InteractsWithTenant;
+
     public function run(): void
     {
-        $team = Team::first();
+        $team = $this->currentInstitution()->team;
 
         $admin = User::create([
             'name' => 'Administrador SIGA',

@@ -4,8 +4,10 @@ namespace Database\Seeders;
 
 use App\Models\AcademicYear;
 use App\Models\Enrollment;
+use App\Models\Institution;
 use Carbon\CarbonInterface;
 use Carbon\CarbonPeriod;
+use Database\Seeders\Concerns\InteractsWithTenant;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +22,8 @@ use Illuminate\Support\Facades\DB;
  */
 class AttendanceBackfillSeeder extends Seeder
 {
+    use InteractsWithTenant;
+
     private const JUSTIFIED_ABSENCE_REASONS = [
         'Cita médica', 'Enfermedad', 'Viaje familiar', 'Trámite personal', 'Duelo familiar',
     ];
@@ -29,6 +33,11 @@ class AttendanceBackfillSeeder extends Seeder
     ];
 
     public function run(): void
+    {
+        $this->forEachInstitution(fn (Institution $institution) => $this->backfill($institution));
+    }
+
+    private function backfill(Institution $institution): void
     {
         $activeYear = AcademicYear::where('is_active', true)->first();
 

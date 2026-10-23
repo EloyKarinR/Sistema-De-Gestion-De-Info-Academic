@@ -6,6 +6,7 @@ use App\Enums\TeamRole;
 use App\Models\AcademicYear;
 use App\Models\Classroom;
 use App\Models\Enrollment;
+use App\Models\Grade;
 use App\Models\Guardian;
 use App\Models\Habit;
 use App\Models\Institution;
@@ -32,7 +33,7 @@ class CrossTenantIsolationTest extends TestCase
      * estudiante matriculado, acudiente y docente) para poder comparar dos
      * escuelas independientes en un mismo test.
      *
-     * @return array{team: Team, admin: User, institution: Institution, year: AcademicYear, student: Student, enrollment: Enrollment, classroom: Classroom, guardian: Guardian, teacher: Teacher}
+     * @return array{team: Team, admin: User, institution: Institution, year: AcademicYear, grade: Grade, student: Student, enrollment: Enrollment, classroom: Classroom, guardian: Guardian, teacher: Teacher}
      */
     private function makeFullSchool(string $label): array
     {
@@ -65,7 +66,7 @@ class CrossTenantIsolationTest extends TestCase
             'first_name' => "Docente{$label}", 'last_name' => 'Gómez', 'shift' => 'matutino',
         ]);
 
-        return compact('team', 'admin', 'institution', 'year', 'student', 'enrollment', 'classroom', 'guardian', 'teacher');
+        return compact('team', 'admin', 'institution', 'year', 'grade', 'student', 'enrollment', 'classroom', 'guardian', 'teacher');
     }
 
     public function test_el_listado_de_estudiantes_no_muestra_estudiantes_de_otra_institucion(): void
@@ -182,7 +183,7 @@ class CrossTenantIsolationTest extends TestCase
         $schoolB = $this->makeFullSchool('B');
 
         $subjectA = Subject::create(['institution_id' => $schoolA['institution']->id, 'name' => 'Matemática']);
-        $schoolA['classroom']->grade->subjects()->attach($subjectA->id);
+        $schoolA['grade']->subjects()->attach($subjectA->id);
         $periodA = $schoolA['year']->periods()->first();
 
         Livewire::actingAs($schoolA['admin'])
@@ -204,7 +205,7 @@ class CrossTenantIsolationTest extends TestCase
         $schoolB = $this->makeFullSchool('B');
 
         $subjectB = Subject::create(['institution_id' => $schoolB['institution']->id, 'name' => 'Ciencias']);
-        $schoolB['classroom']->grade->subjects()->attach($subjectB->id);
+        $schoolB['grade']->subjects()->attach($subjectB->id);
         $periodB = $schoolB['year']->periods()->first();
 
         Livewire::actingAs($schoolA['admin'])

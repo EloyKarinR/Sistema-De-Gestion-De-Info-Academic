@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\ScopedThroughParent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -9,6 +10,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Grade extends Model
 {
+    use ScopedThroughParent;
+
+    protected static string $tenantParent = 'educationLevel';
+
     protected $fillable = [
         'education_level_id', 'name', 'number', 'min_age', 'max_age', 'order',
     ];
@@ -40,11 +45,14 @@ class Grade extends Model
      * (Pre-Kinder → Kinder → 1° ... → 12°), cruzando niveles educativos.
      * "order" solo es único dentro de cada nivel, por eso se combina con el
      * order del nivel educativo. Null si este es el último grado (egresa).
+     * Se filtra explícitamente por institución porque el join no pasa por el
+     * scope de EducationLevel (y en consola no hay contexto).
      */
     public function next(): ?self
     {
         return static::query()
             ->join('education_levels', 'education_levels.id', '=', 'grades.education_level_id')
+            ->where('education_levels.institution_id', $this->educationLevel->institution_id)
             ->where(function ($q) {
                 $q->where('education_levels.order', '>', $this->educationLevel->order)
                     ->orWhere(function ($q) {

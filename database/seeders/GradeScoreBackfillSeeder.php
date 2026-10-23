@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\AcademicYear;
 use App\Models\Enrollment;
+use App\Models\Institution;
+use Database\Seeders\Concerns\InteractsWithTenant;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -20,7 +22,14 @@ use Illuminate\Support\Facades\DB;
  */
 class GradeScoreBackfillSeeder extends Seeder
 {
+    use InteractsWithTenant;
+
     public function run(): void
+    {
+        $this->forEachInstitution(fn (Institution $institution) => $this->backfill($institution));
+    }
+
+    private function backfill(Institution $institution): void
     {
         $activeYear = AcademicYear::where('is_active', true)->first();
 

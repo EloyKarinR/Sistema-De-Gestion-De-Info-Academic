@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Actions\Institutions\ProvisionInstitutionCatalog;
 use App\Models\Institution;
 use App\Models\Team;
 use App\Support\TenantContext;
@@ -32,5 +33,8 @@ class InstitutionSeeder extends Seeder
         // se creen después quedan scopeados/con institution_id sin tocarlos
         // uno por uno.
         app(TenantContext::class)->set($institution);
+
+        // Mismo camino que una escuela registrada desde la app.
+        app(ProvisionInstitutionCatalog::class)->handle($institution);
     }
 }

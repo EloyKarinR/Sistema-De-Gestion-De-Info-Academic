@@ -6,18 +6,20 @@ use App\Enums\TeamRole;
 use App\Models\AcademicYear;
 use App\Models\Classroom;
 use App\Models\Grade;
-use App\Models\Institution;
 use App\Models\Subject;
 use App\Models\SubjectAssignment;
 use App\Models\Teacher;
 use App\Models\Team;
 use App\Models\User;
+use Database\Seeders\Concerns\InteractsWithTenant;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class SchoolStructureSeeder extends Seeder
 {
+    use InteractsWithTenant;
+
     /** @var array<int, string> */
     private array $firstNames = [
         'María', 'Ana', 'Rosa', 'Carmen', 'Yariela', 'Itzel', 'Digna', 'Nereida', 'Lourdes', 'Yaritza',
@@ -36,9 +38,8 @@ class SchoolStructureSeeder extends Seeder
 
     public function run(): void
     {
-        $institution = Institution::first();
         $year = AcademicYear::where('is_active', true)->first();
-        $team = Team::first();
+        $team = $this->currentInstitution()->team;
 
         // Preescolar: 2 aulas matutino + 2 vespertino por grado (Pre-Kinder y Kinder).
         foreach (['Pre-Kinder', 'Kinder'] as $gradeName) {
