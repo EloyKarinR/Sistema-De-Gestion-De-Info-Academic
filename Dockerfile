@@ -3,7 +3,11 @@
 # imagen consume más memoria de la que conviene gastar en el servidor.
 # Para regenerarlos: npm run build && git add public/build
 
-FROM php:8.4-cli-bookworm
+# Versión de parche fijada a propósito: con el tag flotante (8.4-cli-bookworm)
+# un "docker compose up --build" reutiliza la imagen ya descargada y nunca
+# recibe los parches de seguridad. 8.4.27 corrige PHP2Shell
+# (CVE-2026-109618 / CVE-2026-109619, RCE sin autenticación).
+FROM php:8.4.27-cli-bookworm
 
 RUN apt-get update && apt-get install -y \
         libpq-dev libzip-dev libpng-dev libjpeg-dev libfreetype6-dev libicu-dev \
