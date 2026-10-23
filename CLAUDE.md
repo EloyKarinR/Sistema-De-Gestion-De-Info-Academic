@@ -32,13 +32,18 @@ MVP bien definido para la U, arquitectura escalable para comercializar después.
 ## Multi-tenant (rama `feature/multi-tenant`)
 - Cada `Team` tiene una `Institution` (`institutions.team_id`). La institución actual sale de `Auth::user()->currentInstitution()` a través de `App\Support\TenantContext`.
 - Modelos con `institution_id` propio usan el trait `BelongsToInstitution` (scope global + autollenado al crear): AcademicYear, EducationLevel, Guardian, Habit, Student, Subject, Teacher.
-- `Classroom` y `Enrollment` no tienen `institution_id`: usan `ScopedThroughAcademicYear` (se filtran por el año escolar).
-- El resto (GradeScore, Attendance, HabitScore, Period, Grade, SubjectAssignment, ClassSchedule…) NO tiene scope: siempre consultarlos a partir de un padre ya filtrado.
+- Modelos sin `institution_id` pero con un padre que sí lo tiene usan `ScopedThroughParent` (`$tenantParent`): Classroom y Enrollment → `academicYear`, Grade → `educationLevel`.
+- El resto (GradeScore, Attendance, HabitScore, Period, SubjectAssignment, ClassSchedule…) NO tiene scope: siempre consultarlos a partir de un padre ya filtrado.
+- Escuela nueva: al registrar la institución (`pages::institution.edit`) se corre `App\Actions\Institutions\ProvisionInstitutionCatalog`, que crea niveles, grados, materias y hábitos (es idempotente). Es la única fuente del catálogo base: InstitutionSeeder también la usa.
+- Seeders: nunca `Institution::first()` / `Team::first()`. Usar `Database\Seeders\Concerns\InteractsWithTenant`: `currentInstitution()` en la cadena de demo y `forEachInstitution()` en backfills que se corren sueltos.
 - Reglas al escribir código:
   - Nunca confiar en IDs que vienen de propiedades públicas de Livewire. Cargarlos con un modelo filtrado, o comprobar que estén dentro de una colección que el componente cargó él mismo.
   - `Rule::exists(...)` se salta los scopes de Eloquent: siempre anclarlo con `->where('academic_year_id', …)` o `->where('institution_id', …)`.
   - Sin usuario autenticado (jobs, comandos, seeders) el scope no filtra nada. Llamar a `TenantContext::set()` antes de consultar.
   - Un recurso de otra escuela debe responder 404, no 403.
+- Roles por escuela: Spatie con `teams = true`. Los roles (admin, secretaria, docente, acudiente) son globales, pero su ASIGNACIÓN es por equipo (`model_has_roles.team_id`). `App\Support\PermissionsTeamResolver` evalúa permisos en el `current_team_id` del usuario autenticado (en vivo, sin middleware).
+  - Asignar roles SIEMPRE con `$user->assignRoleInTeam('docente', $team)`, nunca `assignRole()`.
+  - `TeamRole` (owner/admin/member) es otra cosa: solo controla la administración del equipo (invitar, renombrar).
 - Tests de aislamiento: `tests/Feature/CrossTenantIsolationTest.php`. Al agregar una pantalla que escriba datos, agregar ahí el caso de ataque.
 
 ## Dominio — Proceso de matrícula
@@ -55,7 +60,9 @@ MVP bien definido para la U, arquitectura escalable para comercializar después.
 - Seeders: nada de Faker (se pierde con `--no-dev` en producción) y deben ser idempotentes
 
 ## Pendientes / para escalar
-- Seeders de demo usan `Institution::first()` → con varias escuelas solo siembran la primera
+- Invitaciones: aceptar una invitación da membresía (`TeamRole`) pero ningún rol de escuela → el invitado no ve nada. Falta elegir el rol (admin/secretaria) al invitar; hoy no hay UI para crear secretarias/admins (solo seeders)
+- Cédula única: la BD ya es única por institución, pero las reglas `unique:students|guardians|teachers,cedula` siguen siendo globales → no se puede registrar en la escuela B a alguien que ya existe en la A
+- Alta de escuelas: nadie puede crear equipos desde la app (`TeamPolicy::create()` = false), así que no hay forma de dar de alta un colegio nuevo salvo seeders. Propuesta: comando `siga:crear-escuela` (equipo + institución + catálogo + admin con su rol)
 - Pagos reales (existe tabla `payments`, sin flujo completo)
 - Entrevistas con colegios reales: pospuestas hasta después de presentar en la U
 
