@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Concerns\ScopedThroughAcademicYear;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Enrollment extends Model
 {
+    use ScopedThroughAcademicYear;
+
     /**
      * Nota mínima para pasar de año en secundaria (escala 1.0-5.0). En
      * primaria/preescolar la promoción es automática sin importar la nota.

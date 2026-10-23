@@ -161,12 +161,19 @@ new #[Layout('layouts.app')] #[Title('Notas')] class extends Component
             abort_unless($assigned, 403, 'No tienes esta materia asignada en esta aula.');
         }
 
+        // classroomId/subjectId/periodId y las claves de $scores vienen del
+        // cliente: solo se aceptan los que este componente cargó él mismo.
+        abort_unless($this->subjects->contains('id', (int) $this->subjectId), 403);
+        abort_unless($this->activeYear->periods->contains('id', (int) $this->periodId), 403);
+
         $this->validate([
             'scores.*' => 'nullable|numeric|min:1|max:5',
         ]);
 
+        $validEnrollmentIds = $this->enrollments->pluck('id');
+
         foreach ($this->scores as $enrollmentId => $score) {
-            if ($score === '' || $score === null) {
+            if ($score === '' || $score === null || ! $validEnrollmentIds->contains((int) $enrollmentId)) {
                 continue;
             }
 

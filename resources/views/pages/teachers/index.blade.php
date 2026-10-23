@@ -213,11 +213,15 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
     {
         $this->authorize('teacher.manage');
 
+        // Rule::exists consulta la tabla directo (sin scopes de Eloquent), así
+        // que se ancla al año activo — y por ende a la institución actual.
         $this->validate([
             'assignClassroomIds' => 'required|array|min:1',
             'assignClassroomIds.*' => [
                 'required',
-                Rule::exists('classrooms', 'id')->where('shift', $this->assignTeacher?->shift),
+                Rule::exists('classrooms', 'id')
+                    ->where('shift', $this->assignTeacher?->shift)
+                    ->where('academic_year_id', $this->activeYear?->id),
             ],
         ], [
             'assignClassroomIds.*.exists' => 'Solo puedes asignar aulas del turno de este docente.',
@@ -226,7 +230,7 @@ new #[Layout('layouts.app')] #[Title('Docentes')] class extends Component
         if ($this->assignMode === 'specialist') {
             $this->validate([
                 'assignSubjectIds' => 'required|array|min:1',
-                'assignSubjectIds.*' => 'exists:subjects,id',
+                'assignSubjectIds.*' => Rule::exists('subjects', 'id')->where('institution_id', Auth::user()->currentInstitution()?->id),
             ]);
         }
 

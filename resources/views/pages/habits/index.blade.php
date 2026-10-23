@@ -148,9 +148,24 @@ new #[Layout('layouts.app')] #[Title('Hábitos y Actitudes')] class extends Comp
             abort_unless($assigned, 403, 'No tienes esta aula asignada.');
         }
 
+        // classroomId/periodId y las claves de $scores vienen del cliente:
+        // solo se aceptan los que este componente cargó él mismo.
+        abort_unless($this->activeYear->periods->contains('id', (int) $this->periodId), 403);
+
+        $this->validate([
+            'scores.*.*' => 'nullable|in:S,R,X',
+        ]);
+
+        $validEnrollmentIds = $this->enrollments->pluck('id');
+        $validHabitIds = $this->habits->pluck('id');
+
         foreach ($this->scores as $enrollmentId => $habitScores) {
+            if (! $validEnrollmentIds->contains((int) $enrollmentId)) {
+                continue;
+            }
+
             foreach ($habitScores as $habitId => $score) {
-                if ($score === '' || $score === null) {
+                if ($score === '' || $score === null || ! $validHabitIds->contains((int) $habitId)) {
                     continue;
                 }
 

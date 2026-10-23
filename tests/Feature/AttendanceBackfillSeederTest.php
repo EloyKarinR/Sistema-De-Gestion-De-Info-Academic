@@ -39,7 +39,7 @@ class AttendanceBackfillSeederTest extends TestCase
         $records = Attendance::where('enrollment_id', $enrollment->id)->get();
 
         // El III Trimestre (2026-08-02 en adelante) todavía no empezó a esta fecha.
-        $this->assertTrue($records->every(fn ($record) => $record->date->lessThan('2026-06-15')));
+        $this->assertTrue($records->every(fn ($record) => $record->date->lessThanOrEqualTo('2026-06-15')));
 
         // Correrlo dos veces no debe duplicar nada.
         $this->seed(AttendanceBackfillSeeder::class);

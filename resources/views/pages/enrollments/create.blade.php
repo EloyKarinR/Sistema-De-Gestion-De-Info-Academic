@@ -8,6 +8,7 @@ use App\Models\Guardian;
 use App\Models\Student;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -284,8 +285,10 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
 
     public function saveEnrollment(): void
     {
+        // Rule::exists consulta la tabla directo (sin scopes de Eloquent), así
+        // que se ancla al año activo — y por ende a la institución actual.
         $this->validate([
-            'classroomId' => 'required|exists:classrooms,id',
+            'classroomId' => ['required', Rule::exists('classrooms', 'id')->where('academic_year_id', $this->activeYear?->id)],
             'enrollmentType' => 'required|in:nuevo_ingreso,promovido,rehabilitacion,traslado',
             'enrollmentDate' => 'required|date',
         ]);
@@ -296,8 +299,10 @@ new #[Layout('layouts.app')] #[Title('Nueva Matrícula')] class extends Componen
             return;
         }
 
-        $student = Student::find($this->studentId);
+        $student = Student::findOrFail($this->studentId);
         $classroom = Classroom::with('grade')->find($this->classroomId);
+
+        abort_if($this->guardianId && ! Guardian::whereKey($this->guardianId)->exists(), 404);
 
         if (! $classroom->grade->acceptsAge($student->age)) {
             $this->addError('classroomId', "Esta aula es para edades de {$classroom->grade->min_age} a {$classroom->grade->max_age} años. El estudiante tiene {$student->age}.");

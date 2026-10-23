@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\ScopedThroughAcademicYear;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Classroom extends Model
 {
+    use ScopedThroughAcademicYear;
+
     protected $fillable = [
         'grade_id', 'academic_year_id', 'section', 'shift', 'capacity',
     ];
