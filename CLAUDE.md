@@ -4,7 +4,7 @@
 Proyecto universitario con visión comercial: venderlo a colegios/escuelas de primaria y secundaria después de la U. Ya está desplegado en producción (Lightsail, Docker + Caddy).
 
 ## Stack
-- Laravel 13 + PHP 8.5.5
+- Laravel 13 + PHP 8.4 (local 8.4.27, Docker fijado a `php:8.4.27-cli-bookworm`; CI prueba 8.4 y 8.5). Mínimo 8.4.27 por PHP2Shell (CVE-2026-109618/109619): al subir de versión, cambiar el tag fijo del Dockerfile
 - Livewire 4 (componentes de página single-file en `resources/views/pages/**`) + Flux 2
 - PostgreSQL
 - Fortify (auth) + spatie/laravel-permission (roles y permisos)

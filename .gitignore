@@ -32,3 +32,6 @@ id_ed25519
 credentials.json
 .DS_Store
 Thumbs.db
+
+# Configuración personal de Claude Code
+/.claude/settings.local.json
